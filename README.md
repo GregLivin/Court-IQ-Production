@@ -148,4 +148,15 @@ Add validation and evaluation metrics
 Improve model sophistication beyond rolling averages
 
 
+## 🚀 Live Production API
 
+🔗 https://court-iq-production-1.onrender.com/docs  
+
+The backend is deployed and publicly accessible in production.
+
+Test it by:
+1. Opening the link  
+2. Clicking `/predict`  
+3. Selecting **Try it out**  
+4. Entering a player name  
+5. Clicking Execute  
