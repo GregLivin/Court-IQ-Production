@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Local data
+data/processed/
+exports/
+
+# Training scripts (optional)
+src/make_training_data.py
+src/train_three_targets.py
+src/train_three_targets_clean.py
+src/train_three_targets_real.py
+
+# Large model artifacts (do NOT push)
+models/
