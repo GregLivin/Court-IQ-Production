@@ -11,47 +11,58 @@ Team Members:
 - Heather Rathnam
 
 ---
-Project Overview
+CourtIQ Production
+PROJECT OVERVIEW
 
-CourtIQ Production is a machine learning–powered NBA Player Performance Prediction Platform designed to analyze historical player statistics and generate real-time performance projections.
+CourtIQ Production is a machine learning–powered NBA Player Performance Prediction Platform that analyzes historical player statistics and generates real-time projections.
 
-The system combines statistical trend analysis with trained regression models to produce structured, data-driven predictions through an interactive Streamlit dashboard.
+The system combines statistical trend analysis with trained regression models and delivers predictions through an interactive Streamlit dashboard.
 
-This project demonstrates applied data engineering, machine learning modeling, and full-stack analytics deployment using Python.
+PROBLEM STATEMENT
 
-Problem Statement
+Traditional box score analysis does not fully capture:
 
-Traditional box score analysis does not account for short-term trends, volatility, or predictive forecasting.
+Short-term performance trends
 
-CourtIQ addresses this by:
+Volatility and consistency
+
+Projection-based forecasting
+
+CourtIQ improves this by:
 
 Analyzing rolling statistical windows (Last 5–15 games)
 
-Engineering predictive features (minutes, recent averages, efficiency trends)
+Engineering predictive features (minutes, usage, efficiency trends)
 
-Training regression models to forecast player performance
+Training regression models for forecasting
 
-Deploying predictions through an interactive analytics interface
+Delivering structured predictions through a live dashboard
 
-System Capabilities
+SYSTEM CAPABILITIES
 
-The system performs the following:
+Data Collection
 
-Retrieves NBA player statistical data using nba_api
+Retrieves NBA player statistics using nba_api
 
-Cleans and preprocesses datasets
+Data Processing
 
-Engineers rolling averages and trend-based features
+Cleans and structures datasets
+
+Engineers rolling averages and predictive features
+
+Machine Learning
 
 Trains regression models for performance prediction
 
-Evaluates model accuracy using MAE and RMSE
+Evaluates accuracy using MAE and RMSE
 
-Serves real-time predictions through Streamlit
+Deployment
 
-Exports structured results in CSV format
+Serves real-time predictions via Streamlit
 
-Key Metrics Predicted:
+Exports structured CSV outputs
+
+KEY METRICS PREDICTED
 
 Points (PTS)
 
@@ -61,7 +72,7 @@ Assists (AST)
 
 PRA (Points + Rebounds + Assists)
 
-Technologies Used
+TECHNOLOGIES USED
 
 Python
 
@@ -73,11 +84,11 @@ scikit-learn
 
 nba_api
 
-Streamlit (deployment & dashboard)
+Streamlit
 
-GitHub (version control)
+GitHub
 
-Repository Structure
+REPOSITORY STRUCTURE
 
 Court-IQ-Production/
 │
