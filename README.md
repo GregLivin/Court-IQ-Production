@@ -11,81 +11,101 @@ Team Members:
 - Heather Rathnam
 
 ---
+Project Overview
 
-## Project Overview
+CourtIQ Production is a machine learning–powered NBA Player Performance Prediction Platform designed to analyze historical player statistics and generate real-time performance projections.
 
-CourtIQ Production is a data-driven NBA Player Performance Prediction Engine designed to analyze historical player statistics and generate structured performance insights.
+The system combines statistical trend analysis with trained regression models to produce structured, data-driven predictions through an interactive Streamlit dashboard.
 
-The system evaluates player trends using statistical analysis techniques and recent performance windows to support predictive modeling.
+This project demonstrates applied data engineering, machine learning modeling, and full-stack analytics deployment using Python.
 
-This project demonstrates applied data analytics, statistical processing, and structured data export using Python.
+Problem Statement
 
----
-
-## Problem Statement
-
-Sports analytics requires accurate interpretation of performance trends. Traditional box score analysis does not fully capture consistency, short-term variability, or projection-based evaluation.
+Traditional box score analysis does not account for short-term trends, volatility, or predictive forecasting.
 
 CourtIQ addresses this by:
 
-- Analyzing rolling statistical windows (Last 5–15 games)
-- Measuring performance consistency and volatility
-- Generating structured outputs for further predictive modeling
+Analyzing rolling statistical windows (Last 5–15 games)
 
----
+Engineering predictive features (minutes, recent averages, efficiency trends)
 
-## System Capabilities
+Training regression models to forecast player performance
+
+Deploying predictions through an interactive analytics interface
+
+System Capabilities
 
 The system performs the following:
 
-1. Retrieves NBA player statistical data  
-2. Cleans and structures raw datasets  
-3. Calculates rolling averages and performance indicators  
-4. Analyzes short-term trend patterns  
-5. Exports processed results in CSV format  
+Retrieves NBA player statistical data using nba_api
 
-Key Metrics Evaluated:
-- Points (PTS)
-- Rebounds (REB)
-- Assists (AST)
-- PRA (Points + Rebounds + Assists)
+Cleans and preprocesses datasets
 
----
+Engineers rolling averages and trend-based features
 
-## Technologies Used
+Trains regression models for performance prediction
 
-- Python
-- Pandas
-- NumPy
-- nba_api
-- GitHub for version control
+Evaluates model accuracy using MAE and RMSE
 
----
+Serves real-time predictions through Streamlit
 
-## Repository Structure
+Exports structured results in CSV format
+
+Key Metrics Predicted:
+
+Points (PTS)
+
+Rebounds (REB)
+
+Assists (AST)
+
+PRA (Points + Rebounds + Assists)
+
+Technologies Used
+
+Python
+
+Pandas
+
+NumPy
+
+scikit-learn
+
+nba_api
+
+Streamlit (deployment & dashboard)
+
+GitHub (version control)
+
+Repository Structure
 
 Court-IQ-Production/
 │
-├── data/          Raw and processed datasets  
-├── notebooks/     Analytical development files  
-├── models/        Core analytical logic  
-├── exports/       Generated CSV outputs  
-└── README.md  
+├── src/ Core application and ML logic
+│ └── courtiq/ Models, loaders, prediction modules
+├── data/ Raw and processed datasets
+├── models/ Saved trained model artifacts
+├── notebooks/ EDA and experimentation
+├── exports/ Generated prediction outputs
+├── requirements.txt Project dependencies
+└── README.md
 
----
-
-## Learning Outcomes
+Learning Outcomes
 
 This project demonstrates:
 
-- Data preprocessing and cleaning techniques
-- Statistical trend analysis
-- Structured CSV export validation
-- Applied analytics in a real-world domain
-- Collaborative development using GitHub
+End-to-end data pipeline development
 
----
+Feature engineering for sports analytics
 
-## Conclusion
+Supervised machine learning implementation
 
-CourtIQ Production provides a structured framework for NBA player performance analysis. The system establishes a foundation for future integration of machine learning models and predictive analytics enhancements.
+Model evaluation and performance validation
+
+Deployment of ML applications using Streamlit
+
+Collaborative version control using GitHub
+
+Conclusion
+
+CourtIQ Production has evolved from a statistical analysis tool into a machine learning–driven predictive analytics platform. It establishes a scalable foundation for SaaS expansion, advanced modeling techniques, and future AI-powered sports intelligence applications.
