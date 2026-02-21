@@ -1,51 +1,54 @@
-# ----------------------------
+# ============================
 # Python cache
-# ----------------------------
+# ============================
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 
-# ----------------------------
-# Virtual environment
-# ----------------------------
+# ============================
+# Virtual environments
+# ============================
 venv/
 .env/
 
-# ----------------------------
-# Local build / downloads
-# ----------------------------
+# ============================
+# Build / download artifacts
+# ============================
 dist/
 *.zip
+.model_cache/
 
-# ----------------------------
-# Local data (not needed in repo)
-# ----------------------------
+# ============================
+# Local processed data
+# (raw CSV is already tracked, so do NOT ignore data/raw/)
+# ============================
 data/processed/
 exports/
 
-# ----------------------------
-# Training scripts (optional – keep repo clean)
-# ----------------------------
+# ============================
+# Optional local training scripts
+# (safe to ignore if not required for grading)
+# ============================
 src/make_training_data.py
 src/train_three_targets.py
 src/train_three_targets_clean.py
 src/train_three_targets_real.py
 src/train_pts_gb_only.py
 
-# ----------------------------
-# Large model artifacts (DO NOT PUSH)
-# Models are loaded from GitHub Releases instead
-# ----------------------------
+# ============================
+# Large model artifacts
+# (models downloaded at runtime from GitHub Releases)
+# ============================
 models/
 
-# ----------------------------
-# OS files
-# ----------------------------
+# ============================
+# OS junk
+# ============================
 .DS_Store
 Thumbs.db
 
-# ----------------------------
-# Streamlit
-# ----------------------------
+# ============================
+# Streamlit local config
+# (DO NOT ignore secrets in cloud — this only affects local)
+# ============================
 .streamlit/
