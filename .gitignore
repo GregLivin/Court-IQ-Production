@@ -1,54 +1,62 @@
-# ============================
-# Python cache
-# ============================
+# =====================================================
+# Python cache files (auto-generated)
+# =====================================================
 __pycache__/
 *.py[cod]
 *$py.class
 
-# ============================
-# Virtual environments
-# ============================
+
+# =====================================================
+# Virtual environments (local only)
+# =====================================================
 venv/
 .env/
 
-# ============================
-# Build / download artifacts
-# ============================
+
+# =====================================================
+# Build / download artifacts (generated at runtime)
+# =====================================================
 dist/
 *.zip
 .model_cache/
 
-# ============================
+
+# =====================================================
 # Local processed data
-# (raw CSV is already tracked, so do NOT ignore data/raw/)
-# ============================
+# (Raw CSV is tracked, so DO NOT ignore data/raw/)
+# =====================================================
 data/processed/
 exports/
 
-# ============================
+
+# =====================================================
 # Optional local training scripts
-# (safe to ignore if not required for grading)
-# ============================
+# (Not needed for deployment or grading)
+# =====================================================
 src/make_training_data.py
 src/train_three_targets.py
 src/train_three_targets_clean.py
 src/train_three_targets_real.py
 src/train_pts_gb_only.py
 
-# ============================
-# Large model artifacts
-# (models downloaded at runtime from GitHub Releases)
-# ============================
-models/
 
-# ============================
-# OS junk
-# ============================
+# =====================================================
+# Large model artifacts
+# Only ignore the ROOT models folder
+# This allows src/courtiq/models/ (code) to be tracked
+# =====================================================
+/models/
+
+
+# =====================================================
+# OS junk files
+# =====================================================
 .DS_Store
 Thumbs.db
 
-# ============================
+
+# =====================================================
 # Streamlit local config
-# (DO NOT ignore secrets in cloud — this only affects local)
-# ============================
+# (Only affects local development, not Streamlit Cloud)
+# =====================================================
 .streamlit/
