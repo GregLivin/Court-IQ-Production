@@ -60,3 +60,5 @@ Thumbs.db
 # (Only affects local development, not Streamlit Cloud)
 # =====================================================
 .streamlit/
+# Raw data files
+data/raw/*.csv
