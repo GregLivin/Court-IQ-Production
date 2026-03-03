@@ -1,0 +1,64 @@
+# =====================================================
+# Python cache files (auto-generated)
+# =====================================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# =====================================================
+# Virtual environments (local only)
+# =====================================================
+venv/
+.env/
+
+
+# =====================================================
+# Build / download artifacts (generated at runtime)
+# =====================================================
+dist/
+*.zip
+.model_cache/
+
+
+# =====================================================
+# Local processed data
+# (Raw CSV is tracked, so DO NOT ignore data/raw/)
+# =====================================================
+data/processed/
+exports/
+
+
+# =====================================================
+# Optional local training scripts
+# (Not needed for deployment or grading)
+# =====================================================
+src/make_training_data.py
+src/train_three_targets.py
+src/train_three_targets_clean.py
+src/train_three_targets_real.py
+src/train_pts_gb_only.py
+
+
+# =====================================================
+# Large model artifacts
+# Only ignore the ROOT models folder
+# This allows src/courtiq/models/ (code) to be tracked
+# =====================================================
+/models/
+
+
+# =====================================================
+# OS junk files
+# =====================================================
+.DS_Store
+Thumbs.db
+
+
+# =====================================================
+# Streamlit local config
+# (Only affects local development, not Streamlit Cloud)
+# =====================================================
+.streamlit/
+# Raw data files
+data/raw/*.csv
