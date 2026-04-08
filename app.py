@@ -14,6 +14,8 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+st.write("DEPLOY TEST 2025 VERSION")
+
 from src.courtiq.models.predict import predict_from_last_n
 
 # Optional team lookup for NBA logo support
