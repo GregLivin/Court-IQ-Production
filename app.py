@@ -1,24 +1,6 @@
 """
-CourtIQ Streamlit App (Clean UI + Matchup Layer + Probabilities + Logs + Charts)
-
-What’s in this app:
-- Clean white UI (black text)
-- Single Player Prediction:
-  - Base projection (our ML model: predict_from_last_n)
-  - Optional matchup-adjusted PTS (lightweight layer)
-  - Matchup history (H2H) section
-  - Over/Under probabilities for BOTH PTS and PRA using a Normal distribution fit
-  - Sigma fallback logic:
-      1) Use H2H sigma if enough H2H games
-      2) Else use last N sigma
-      3) Else use a safe fallback sigma
-  - Last 5 games log table with DATE + OPP + PTS/REB/AST/PRA/MIN
-  - Simple trend charts for PTS/REB/AST/PRA (last games)
-
-Notes to team:
-- “Confidence” is a consistency score from last N volatility (not guaranteed).
-- Probabilities here are simple normal-fit estimates (not sportsbook odds).
-- Matchup-adjusted PTS is not a new model yet; it’s a UI layer on top of base PTS.
+CourtIQ Streamlit app for player predictions, matchup history, and
+over/under estimates.
 """
 
 from __future__ import annotations
@@ -34,16 +16,14 @@ import streamlit as st
 
 from src.courtiq.models.predict import predict_from_last_n
 
-# Optional: nba_api static teams list (TEAM_ABBREVIATION -> TEAM_ID for NBA CDN logos)
+# Optional team lookup for NBA logo support
 try:
     from nba_api.stats.static import teams as static_teams
 except Exception:
     static_teams = None
 
 
-# ============================================================
-# UI CONFIG
-# ============================================================
+# Page setup
 st.set_page_config(page_title="CourtIQ", layout="wide")
 
 st.markdown(
@@ -72,13 +52,10 @@ h1,h2,h3,h4 { color: #000000; }
 st.title("CourtIQ — Player Predictions")
 
 
-# ============================================================
-# HELPERS: DATA PATH + LOADING
-# ============================================================
+# Data loading helpers
 def newest_gamelog_csv() -> Path:
     """
-    Auto-pick the newest nba_api Regular Season file in data/raw.
-    This makes the app use your 2025-26 file automatically once it's created.
+    Return the newest regular season gamelog file in data/raw.
     """
     files = glob("data/raw/player_gamelogs_*_Regular_Season*_nba_api.csv")
     if not files:
@@ -93,24 +70,20 @@ DATA_PATH = newest_gamelog_csv()
 @st.cache_data
 def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     """
-    Load and normalize gamelogs for UI features:
-    - player list
-    - team list
-    - matchup history
-    - last games table
+    Load and clean the gamelog file used by the app.
     """
     df = pd.read_csv(csv_path)
 
-    # Normalize text columns
+    # Clean text columns
     for col in ["PLAYER_NAME", "TEAM_ABBREVIATION", "MATCHUP", "OPP_TEAM_ABBREVIATION"]:
         if col in df.columns:
             df[col] = df[col].astype(str)
 
-    # Normalize date
+    # Convert game date
     if "GAME_DATE" in df.columns:
         df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"], errors="coerce")
 
-    # Normalize stats
+    # Convert stat columns
     for col in ["PTS", "REB", "AST", "MIN"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -121,12 +94,16 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
 @st.cache_data
 def build_team_id_map() -> dict[str, int]:
     """
-    TEAM_ABBREVIATION -> TEAM_ID for logos (NBA CDN).
+    Build a team abbreviation to team ID map for logos.
     """
     if static_teams is None:
         return {}
     all_teams = static_teams.get_teams()
-    return {t["abbreviation"]: int(t["id"]) for t in all_teams if "abbreviation" in t and "id" in t}
+    return {
+        t["abbreviation"]: int(t["id"])
+        for t in all_teams
+        if "abbreviation" in t and "id" in t
+    }
 
 
 def logo_url_from_team_id(team_id: int) -> str:
@@ -135,22 +112,22 @@ def logo_url_from_team_id(team_id: int) -> str:
 
 def logo_url_from_abbr(team_abbr: str, team_id_map: dict[str, int]) -> str | None:
     """
-    Prefer NBA CDN via TEAM_ID; if missing, fall back to ESPN logo URL.
+    Return a team logo URL from the team abbreviation.
     """
     if not team_abbr:
         return None
+
     abbr = team_abbr.upper().strip()
 
     if abbr in team_id_map:
         return logo_url_from_team_id(team_id_map[abbr])
 
-    # ESPN fallback
     return f"https://a.espncdn.com/i/teamlogos/nba/500/{abbr.lower()}.png"
 
 
 def get_player_team_abbr(df: pd.DataFrame, player_name: str) -> str | None:
     """
-    Infer player team by most recent row in the dataset.
+    Get the player's most recent team abbreviation.
     """
     if "PLAYER_NAME" not in df.columns or "TEAM_ABBREVIATION" not in df.columns:
         return None
@@ -161,16 +138,14 @@ def get_player_team_abbr(df: pd.DataFrame, player_name: str) -> str | None:
 
     if "GAME_DATE" in sub.columns:
         sub = sub.sort_values("GAME_DATE")
+
     return str(sub.iloc[-1]["TEAM_ABBREVIATION"])
 
 
-# ============================================================
-# HELPERS: MATCHUP + CONFIDENCE + NORMAL PROBABILITIES
-# ============================================================
+# Matchup and probability helpers
 def compute_confidence_from_last_n(df: pd.DataFrame, player_name: str, n: int) -> int | None:
     """
-    Consistency score from last N PTS volatility:
-    - lower std => higher confidence
+    Estimate consistency from the player's last N scoring results.
     """
     if "PLAYER_NAME" not in df.columns or "PTS" not in df.columns:
         return None
@@ -189,7 +164,7 @@ def compute_confidence_from_last_n(df: pd.DataFrame, player_name: str, n: int) -
 
     pts_std = float(pts.std(ddof=0)) if len(pts) > 1 else 0.0
 
-    # Simple mapping we can tune later
+    # Convert volatility into a simple confidence score
     conf = 95 - (pts_std * 4.5)
     conf = max(10, min(95, conf))
     return int(round(conf))
@@ -197,9 +172,7 @@ def compute_confidence_from_last_n(df: pd.DataFrame, player_name: str, n: int) -
 
 def parse_opponent_from_matchup(matchup: str, team_abbr: str) -> str | None:
     """
-    Many datasets include MATCHUP like:
-      "LAL vs DEN" or "LAL @ DEN"
-    Opponent is typically the last token.
+    Parse the opponent from a matchup string such as 'LAL vs DEN' or 'LAL @ DEN'.
     """
     if not matchup or not team_abbr:
         return None
@@ -210,15 +183,16 @@ def parse_opponent_from_matchup(matchup: str, team_abbr: str) -> str | None:
 
     opp = parts[-1].strip().upper()
     team_abbr = str(team_abbr).strip().upper()
+
     if opp == team_abbr:
         return None
+
     return opp
 
 
 def get_matchup_history(df: pd.DataFrame, player_name: str, opp_abbr: str, last_k: int = 10) -> pd.DataFrame:
     """
-    Pull last_k games for a player vs opp_abbr.
-    Uses OPP_TEAM_ABBREVIATION if present; otherwise parses MATCHUP.
+    Return recent matchup history for one player against one opponent.
     """
     if "PLAYER_NAME" not in df.columns:
         return pd.DataFrame()
@@ -231,7 +205,9 @@ def get_matchup_history(df: pd.DataFrame, player_name: str, opp_abbr: str, last_
         sub["OPP"] = sub["OPP_TEAM_ABBREVIATION"].astype(str).str.upper()
     elif "MATCHUP" in sub.columns and "TEAM_ABBREVIATION" in sub.columns:
         sub["OPP"] = sub.apply(
-            lambda r: parse_opponent_from_matchup(r.get("MATCHUP"), r.get("TEAM_ABBREVIATION")),
+            lambda r: parse_opponent_from_matchup(
+                r.get("MATCHUP"), r.get("TEAM_ABBREVIATION")
+            ),
             axis=1,
         )
     else:
@@ -251,29 +227,35 @@ def get_matchup_history(df: pd.DataFrame, player_name: str, opp_abbr: str, last_
             cols.append(c)
 
     out = sub[cols].tail(last_k).copy()
+
     if "GAME_DATE" in out.columns:
         out["GAME_DATE"] = out["GAME_DATE"].dt.date
 
-    # Add PRA if possible
+    # Add PRA when stats are available
     if all(c in out.columns for c in ["PTS", "REB", "AST"]):
-        out["PRA"] = pd.to_numeric(out["PTS"], errors="coerce") + pd.to_numeric(out["REB"], errors="coerce") + pd.to_numeric(out["AST"], errors="coerce")
+        out["PRA"] = (
+            pd.to_numeric(out["PTS"], errors="coerce")
+            + pd.to_numeric(out["REB"], errors="coerce")
+            + pd.to_numeric(out["AST"], errors="coerce")
+        )
 
     return out
 
 
 def normal_cdf(z: float) -> float:
     """
-    Standard normal CDF using erf (no scipy needed).
+    Standard normal cumulative distribution function.
     """
     return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
 
 
 def normal_prob_over(mu: float, sigma: float, line: float) -> float:
     """
-    P(X > line) for X ~ N(mu, sigma^2).
+    Return the probability of going over a stat line.
     """
     if sigma <= 1e-9:
         return 1.0 if mu > line else 0.0
+
     z = (line - mu) / sigma
     p_under = normal_cdf(z)
     return float(1.0 - p_under)
@@ -281,7 +263,7 @@ def normal_prob_over(mu: float, sigma: float, line: float) -> float:
 
 def last_n_series(df: pd.DataFrame, player_name: str, col: str, n: int) -> pd.Series:
     """
-    Return last N values for a stat col for a player (sorted by date if available).
+    Return the last N values for one stat.
     """
     if "PLAYER_NAME" not in df.columns or col not in df.columns:
         return pd.Series(dtype=float)
@@ -299,15 +281,16 @@ def last_n_series(df: pd.DataFrame, player_name: str, col: str, n: int) -> pd.Se
 
 def last_n_pra_series(df: pd.DataFrame, player_name: str, n: int) -> pd.Series:
     """
-    PRA = PTS + REB + AST for last N games.
+    Return the last N PRA values.
     """
     pts = last_n_series(df, player_name, "PTS", n)
     reb = last_n_series(df, player_name, "REB", n)
     ast = last_n_series(df, player_name, "AST", n)
+
     if pts.empty or reb.empty or ast.empty:
         return pd.Series(dtype=float)
 
-    # Align last N lengths safely
+    # Keep all three series the same length
     m = min(len(pts), len(reb), len(ast))
     pts = pts.tail(m).reset_index(drop=True)
     reb = reb.tail(m).reset_index(drop=True)
@@ -325,13 +308,9 @@ def sigma_with_fallback(
     safe_fallback_sigma: float = 6.0,
 ) -> tuple[float, str]:
     """
-    Sigma fallback logic:
-    1) If opponent provided and we have >= min H2H games, use H2H sigma
-    2) Else use last N sigma
-    3) Else safe fallback sigma
-    Returns (sigma, explanation)
+    Choose sigma from H2H data first, then recent games, then a fallback value.
     """
-    # 1) H2H sigma attempt
+    # Try head-to-head data first
     if opp_abbr_for_sigma:
         hist = get_matchup_history(df, player_name, opp_abbr_for_sigma, last_k=50)
         if not hist.empty:
@@ -345,7 +324,7 @@ def sigma_with_fallback(
                 sigma = max(1.0, sigma)
                 return sigma, f"Sigma used H2H vs {opp_abbr_for_sigma} (n={len(vals)})"
 
-    # 2) last N sigma
+    # Fall back to recent game data
     if stat == "PRA":
         s = last_n_pra_series(df, player_name, n)
     else:
@@ -356,17 +335,13 @@ def sigma_with_fallback(
         sigma = max(1.0, sigma)
         return sigma, f"Sigma used last {n} games (n={len(s)})"
 
-    # 3) safe fallback
+    # Use a fallback if there is not enough data
     return safe_fallback_sigma, "Sigma used safe fallback (not enough game data)"
 
 
 def matchup_adjusted_pts(df: pd.DataFrame, player_name: str, opp_abbr: str, base_pts: float) -> tuple[float, str]:
     """
-    Lightweight matchup adjustment:
-    - If player has H2H games vs opponent, compute delta = (H2H avg PTS - lastN avg PTS)
-    - Apply a capped shift to base_pts
-
-    This keeps the adjustment conservative so we don't overreact to small sample sizes.
+    Apply a small matchup adjustment to the base points projection.
     """
     opp_abbr = str(opp_abbr).upper().strip()
     hist = get_matchup_history(df, player_name, opp_abbr, last_k=20)
@@ -378,7 +353,7 @@ def matchup_adjusted_pts(df: pd.DataFrame, player_name: str, opp_abbr: str, base
     if h2h_pts.empty:
         return float(base_pts), "No valid H2H PTS found. Using base PTS."
 
-    # Last N baseline from raw logs
+    # Use recent scoring as the baseline
     last_pts = last_n_series(df, player_name, "PTS", n=10)
     if last_pts.empty:
         return float(base_pts), "No recent PTS series found. Using base PTS."
@@ -387,7 +362,7 @@ def matchup_adjusted_pts(df: pd.DataFrame, player_name: str, opp_abbr: str, base
     recent_mean = float(last_pts.mean())
     delta = h2h_mean - recent_mean
 
-    # Cap the adjustment so one matchup doesn't swing too hard
+    # Limit the adjustment so one matchup does not shift the result too much
     capped_delta = max(-4.0, min(4.0, delta))
     adj = float(base_pts + capped_delta)
 
@@ -410,18 +385,14 @@ def over_under_probabilities(
     h2h_sigma_min_games: int = 4,
 ) -> dict[str, Any]:
     """
-    Compute Over/Under using a normal distribution:
-      X ~ N(mu, sigma^2)
-
-    - mu is last N mean by default, unless mu_override is passed (e.g., adjusted PTS)
-    - sigma uses sigma_with_fallback (H2H sigma -> lastN sigma -> safe fallback)
+    Compute over and under probabilities using a normal distribution.
     """
     try:
         line = float(line)
     except Exception:
         return {"ok": False, "error": "Line must be a number."}
 
-    # mu from series unless overridden
+    # Use the provided mean if available, otherwise use recent game data
     if mu_override is not None:
         mu = float(mu_override)
         mu_source = "mu_override"
@@ -463,8 +434,7 @@ def over_under_probabilities(
 
 def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataFrame:
     """
-    Build last k games table with:
-    DATE, OPP, PTS, REB, AST, PRA, MIN
+    Build a table for the player's last K games.
     """
     if "PLAYER_NAME" not in df.columns:
         return pd.DataFrame()
@@ -477,7 +447,7 @@ def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataF
         sub = sub.sort_values("GAME_DATE")
     sub = sub.tail(k).copy()
 
-    # opponent column
+    # Build opponent column
     if "OPP_TEAM_ABBREVIATION" in sub.columns:
         sub["OPP"] = sub["OPP_TEAM_ABBREVIATION"].astype(str).str.upper()
     elif "MATCHUP" in sub.columns and "TEAM_ABBREVIATION" in sub.columns:
@@ -502,14 +472,18 @@ def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataF
 
     out = sub[out_cols].copy()
 
-    # PRA
+    # Add PRA
     if all(c in out.columns for c in ["PTS", "REB", "AST"]):
-        out["PRA"] = pd.to_numeric(out["PTS"], errors="coerce") + pd.to_numeric(out["REB"], errors="coerce") + pd.to_numeric(out["AST"], errors="coerce")
+        out["PRA"] = (
+            pd.to_numeric(out["PTS"], errors="coerce")
+            + pd.to_numeric(out["REB"], errors="coerce")
+            + pd.to_numeric(out["AST"], errors="coerce")
+        )
 
     if "GAME_DATE" in out.columns:
         out["GAME_DATE"] = pd.to_datetime(out["GAME_DATE"], errors="coerce").dt.date
 
-    # nice ordering
+    # Set display order
     preferred = ["GAME_DATE", "MATCHUP", "OPP", "PTS", "REB", "AST", "PRA", "MIN"]
     final_cols = [c for c in preferred if c in out.columns]
     return out[final_cols].sort_values("GAME_DATE", ascending=False)
@@ -517,7 +491,7 @@ def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataF
 
 def last_games_chart_df(df: pd.DataFrame, player_name: str, k: int = 10) -> pd.DataFrame:
     """
-    Small dataframe for charts: GAME_DATE + PTS/REB/AST/PRA
+    Build a small dataframe for recent trend charts.
     """
     if "PLAYER_NAME" not in df.columns:
         return pd.DataFrame()
@@ -544,9 +518,7 @@ def last_games_chart_df(df: pd.DataFrame, player_name: str, k: int = 10) -> pd.D
     return out
 
 
-# ============================================================
-# LOAD DATA ONCE
-# ============================================================
+# Load app data
 df_logs = None
 team_id_map: dict[str, int] = {}
 
@@ -557,13 +529,11 @@ else:
     st.warning(f"Could not find gamelog file: {DATA_PATH}")
 
 
-# ============================================================
-# TOP: NEAT USER GUIDE (NO SIDEBAR)
-# ============================================================
+# Top guide
 st.markdown(
     f"""
 <div class="courtiq-card">
-  <div style="font-weight:700; font-size:1.05rem;">How to use</div>
+  <div style="font-weight:700; font-size:1.05rem;">Quick guide</div>
   <div class="courtiq-muted" style="margin-top:6px;">
     • Enter a player name and choose Last N games<br/>
     • Optional: choose an opponent to apply matchup-adjusted PTS + show matchup history<br/>
@@ -576,9 +546,7 @@ st.markdown(
 )
 
 
-# ============================================================
-# SINGLE PLAYER SECTION
-# ============================================================
+# Single player section
 st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
 st.markdown("## Single Player Prediction")
 st.markdown(
@@ -586,7 +554,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Inputs
+# Player inputs
 player = st.text_input("Player name", value="Kevin Durant")
 n = st.slider("Last N games", min_value=1, max_value=10, value=5)
 
@@ -605,7 +573,7 @@ with c_line1:
 with c_line2:
     pra_line = st.number_input("PRA line (for Over/Under probability)", min_value=0.0, value=25.5, step=0.5)
 
-# Predict button ABOVE logs (user friendly)
+# Predict button
 st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
 note_col, btn_col = st.columns([3, 1])
@@ -614,19 +582,19 @@ with note_col:
 with btn_col:
     do_predict = st.button("Predict", use_container_width=True)
 
-# Output
+# Show results
 if do_predict:
     if df_logs is None:
         st.error("Gamelog dataset is missing. Add a CSV into data/raw and re-run the app.")
     else:
-        # Base model projection
+        # Base model output
         result = predict_from_last_n(player_name=player, n=n)
 
         base_pts = float(result.get("predicted_points", 0.0))
         base_reb = float(result.get("predicted_rebounds", 0.0))
         base_ast = float(result.get("predicted_assists", 0.0))
 
-        # Matchup-adjusted PTS (optional)
+        # Optional matchup adjustment
         adj_pts = base_pts
         adj_note = "No opponent selected. Using base PTS."
         opp_for_sigma = None
@@ -637,22 +605,22 @@ if do_predict:
 
         adj_pra = float(adj_pts + base_reb + base_ast)
 
-        # Logos
+        # Team logos
         p_team = get_player_team_abbr(df_logs, player)
         p_logo = logo_url_from_abbr(p_team, team_id_map) if p_team else None
         opp_logo = logo_url_from_abbr(opp_abbr, team_id_map) if (opp_abbr and opp_abbr != "—") else None
 
-        # Confidence
+        # Confidence score
         conf = compute_confidence_from_last_n(df_logs, player, n)
 
-        # Probabilities (PTS + PRA)
+        # Over/under probabilities
         pts_ou = over_under_probabilities(
             df=df_logs,
             player_name=player,
             n=n,
             line=float(pts_line),
             stat="PTS",
-            mu_override=float(adj_pts),  # Shift mu to adjusted PTS
+            mu_override=float(adj_pts),
             opp_abbr_for_sigma=opp_for_sigma,
             h2h_sigma_min_games=4,
         )
@@ -663,14 +631,14 @@ if do_predict:
             n=n,
             line=float(pra_line),
             stat="PRA",
-            mu_override=float(adj_pra),  # Shift mu to adjusted PRA
+            mu_override=float(adj_pra),
             opp_abbr_for_sigma=opp_for_sigma,
             h2h_sigma_min_games=4,
         )
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
-        # Header row with logo(s)
+        # Header display
         head_left, head_mid, head_right = st.columns([1, 4, 1])
         with head_left:
             if p_logo:
@@ -680,7 +648,7 @@ if do_predict:
 
         with head_mid:
             st.markdown("### Projection")
-            st.caption("Base (model) + optional matchup layer when opponent is selected.")
+            st.caption("Base projection with an optional matchup layer when an opponent is selected.")
 
         with head_right:
             if opp_logo:
@@ -688,7 +656,7 @@ if do_predict:
             elif opp_abbr and opp_abbr != "—":
                 st.write(opp_abbr)
 
-        # Metrics
+        # Main stats
         m1, m2, m3, m4, m5 = st.columns(5)
         m1.metric("PTS (Base)", f"{base_pts:.2f}")
         m2.metric("PTS (Adjusted)", f"{float(adj_pts):.2f}")
@@ -699,15 +667,14 @@ if do_predict:
         st.markdown("#### How the adjusted PTS was calculated")
         st.write(adj_note)
 
-        # Confidence
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
         if conf is not None:
             st.metric("Confidence (Consistency)", f"{conf}%")
-            st.caption("Based on how stable the last N games have been (lower volatility = higher confidence).")
+            st.caption("Based on how steady the player's last N games have been.")
         else:
             st.metric("Confidence (Consistency)", "—")
 
-        # Over/Under block (PTS + PRA)
+        # Over/under section
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
         st.markdown("### Over / Under Probabilities")
 
@@ -735,14 +702,14 @@ if do_predict:
             else:
                 st.info(pra_ou.get("error", "Could not compute PRA probabilities."))
 
-        # Matchup history section
+        # Matchup history
         if opp_abbr and opp_abbr != "—":
             st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-            st.markdown("### Matchup History (H2H)")
+            st.markdown("### Matchup History")
 
             hist = get_matchup_history(df_logs, player, opp_abbr, last_k=10)
             if hist.empty:
-                st.info("No matchup history found (or dataset missing MATCHUP/OPP_TEAM_ABBREVIATION).")
+                st.info("No matchup history found (or dataset is missing matchup columns).")
             else:
                 st.dataframe(hist, width="stretch", hide_index=True)
 
@@ -753,9 +720,9 @@ if do_predict:
                             f"H2H vs {opp_abbr}: Games={len(pts_series)}, Avg PTS={pts_series.mean():.1f}, Last PTS={pts_series.iloc[-1]:.0f}"
                         )
 
-        # Last 5 games log (below button, user requested)
+        # Last 5 games
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### Last 5 Games Log")
+        st.markdown("### Last 5 Games")
 
         last5 = last_games_table(df_logs, player, k=5)
         if last5.empty:
@@ -763,9 +730,9 @@ if do_predict:
         else:
             st.dataframe(last5, width="stretch", hide_index=True)
 
-        # Charts
+        # Trend charts
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### Trend Charts (Last Games)")
+        st.markdown("### Trend Charts")
 
         chart_df = last_games_chart_df(df_logs, player, k=10)
         if chart_df.empty:
@@ -784,12 +751,13 @@ if do_predict:
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ============================================================
-# PICK BUILDER SECTION (kept, but neat)
-# ============================================================
+# Pick builder section
 st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
-st.markdown("## Pick Builder (Team → Player)")
-st.markdown('<div class="courtiq-muted">Build a pool, then generate 2–8 picks. Optional opponent adds adjusted PTS + matchup-aware sigma.</div>', unsafe_allow_html=True)
+st.markdown("## Pick Builder")
+st.markdown(
+    '<div class="courtiq-muted">Build a player pool, then generate 2 to 8 picks.</div>',
+    unsafe_allow_html=True,
+)
 
 if df_logs is None or "TEAM_ABBREVIATION" not in df_logs.columns or "PLAYER_NAME" not in df_logs.columns:
     st.error("Pick Builder needs TEAM_ABBREVIATION and PLAYER_NAME in the gamelog CSV.")
@@ -829,7 +797,7 @@ else:
     num_picks = st.slider("How many picks? (2–8)", 2, 8, 5, key="pb_num")
     mode = st.radio("Pick Mode", ["Randomize", "Top Points", "Top Edge"], horizontal=True, key="pb_mode")
 
-    opp2 = st.selectbox("Opponent (optional, uses adjusted + matchup sigma)", options=["—"] + teams, key="pb_opp")
+    opp2 = st.selectbox("Opponent (optional, uses adjusted projection)", options=["—"] + teams, key="pb_opp")
 
     pb1, pb2 = st.columns(2)
     with pb1:
@@ -844,6 +812,7 @@ else:
             st.error(f"Add at least {num_picks} players to the pool.")
         else:
             rows: list[dict[str, Any]] = []
+
             for name in pool:
                 r = predict_from_last_n(player_name=name, n=n)
 
@@ -884,7 +853,7 @@ else:
                 pts_over = None
                 if pts_ou.get("ok"):
                     pts_over = float(pts_ou["prob_over"])
-                    pts_edge = (pts_over - 0.5) * 100.0  # simple edge vs 50/50 baseline
+                    pts_edge = (pts_over - 0.5) * 100.0
 
                 pra_edge = None
                 pra_over = None
@@ -910,13 +879,15 @@ else:
                     }
                 )
 
-            # pick selection
             if mode == "Top Points":
                 picks = sorted(rows, key=lambda x: x["PTS"], reverse=True)[:num_picks]
             elif mode == "Top Edge":
                 picks = sorted(
                     rows,
-                    key=lambda x: (x["BestEdge%"] is not None, x["BestEdge%"] if x["BestEdge%"] is not None else -999),
+                    key=lambda x: (
+                        x["BestEdge%"] is not None,
+                        x["BestEdge%"] if x["BestEdge%"] is not None else -999,
+                    ),
                     reverse=True,
                 )[:num_picks]
             else:
@@ -927,7 +898,6 @@ else:
             st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
             st.success(f"{num_picks}-Pick Set")
 
-            # Render picks as cards (2 columns)
             for idx in range(0, len(picks), 2):
                 cols = st.columns(2)
                 for j in range(2):
@@ -956,8 +926,11 @@ else:
 
                         with tr:
                             st.markdown(f"### {name}")
-                            subtitle = "Projection (Adjusted)" if opp2 != "—" else "Projection"
-                            st.markdown(f'<div class="courtiq-muted">{subtitle}</div>', unsafe_allow_html=True)
+                            subtitle = "Adjusted projection" if opp2 != "—" else "Projection"
+                            st.markdown(
+                                f'<div class="courtiq-muted">{subtitle}</div>',
+                                unsafe_allow_html=True,
+                            )
 
                         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
@@ -972,12 +945,12 @@ else:
                         x, y = st.columns(2)
                         with x:
                             st.metric("PTS Over", f'{p.get("PTS_ProbOver")}%' if p.get("PTS_ProbOver") is not None else "—")
-                            st.caption(f'Edge: {p.get("PTS_Edge%","—")}%')
+                            st.caption(f'Edge: {p.get("PTS_Edge%", "—")}%')
                         with y:
                             st.metric("PRA Over", f'{p.get("PRA_ProbOver")}%' if p.get("PRA_ProbOver") is not None else "—")
-                            st.caption(f'Edge: {p.get("PRA_Edge%","—")}%')
+                            st.caption(f'Edge: {p.get("PRA_Edge%", "—")}%')
 
-                        st.caption(f'Best Edge: {p.get("BestEdge%","—")}%')
+                        st.caption(f'Best Edge: {p.get("BestEdge%", "—")}%')
                         st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
