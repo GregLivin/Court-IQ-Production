@@ -1,162 +1,44 @@
 # CourtIQ Production
 
-## NBA Player Performance Prediction Engine
+CourtIQ Production is a machine learning-powered NBA analytics engine that predicts player performance using rolling statistics and trend-based modeling.
 
-**Course:** ITAI-2277  
-**Instructor:** Prof. Sitaram Ayyagari  
+Built with Python and FastAPI, this project transforms raw NBA data into real-time predictions through a scalable API.
 
-**Team Members:**
-- Gregory Livingston  
-- Erwin Cheng  
-- Heather Rathnam  
+## Live API
 
----
+Deployed API docs:
+https://courtiq-production.onrender.com/docs
 
-## 📌 Project Overview
+## Features
 
-CourtIQ Production is a data driven NBA Player Performance Prediction Engine that analyzes historical player statistics and generates structured performance projections.
+- Player performance prediction for points, assists, and rebounds
+- Rolling averages and trend analysis
+- FastAPI backend for real-time predictions
+- Cloud deployment for public API access
+- Machine learning-ready architecture
 
-The system evaluates recent performance trends using rolling statistical windows and exposes predictions through a live FastAPI backend.
+## How It Works
 
-This project demonstrates applied data analytics, backend API development, and cloud deployment in a production style environment.
+1. Data collection
+   - Historical NBA player stats
 
----
+2. Feature engineering
+   - Rolling averages from recent games
+   - Trend indicators such as hot and cold streaks
 
-## 🎯 Problem Statement
+3. Modeling
+   - Regression-based prediction models
 
-Traditional box score analysis does not fully capture short term trends, performance consistency, or projection based evaluation.
+4. API layer
+   - FastAPI serves predictions through endpoints
 
-CourtIQ addresses this by:
+## Project Structure
 
-- Analyzing rolling performance windows (Last 5 to 15 games)  
-- Measuring short term performance patterns  
-- Generating structured predictive outputs  
-- Providing scalable backend API access  
-
----
-
-## ⚙️ System Capabilities
-
-The system performs the following:
-
-1. Retrieves NBA player statistical data  
-2. Cleans and structures raw datasets  
-3. Calculates rolling averages and trend indicators  
-4. Generates projected performance outputs  
-5. Exposes predictions through a production API  
-
-### Key Metrics Evaluated
-
-- Points (PTS)  
-- Rebounds (REB)  
-- Assists (AST)  
-- PRA (Points + Rebounds + Assists)  
-
----
-
-## 🧠 Technology Stack
-
-- Python  
-- Pandas  
-- NumPy  
-- FastAPI  
-- Uvicorn  
-- GitHub  
-- Render (Cloud Deployment)  
-
----
-
-## 🗂 Repository Structure
+```text
 Court-IQ-Production/
-│
-├── api/ FastAPI application and endpoints
-├── src/ Core prediction logic
-├── data/ Raw and processed datasets
-├── notebooks/ Research and experimentation
-├── tests/ Testing modules
-├── requirements.txt
-└── README.md
-
-
----
-
-## 🌍 Live API (Production Deployment)
-
-The FastAPI backend is deployed on Render:
-
-https://court-iq-production-1.onrender.com/docs  
-
-### How to Test the API
-
-1. Open the link above  
-2. Click `/predict`  
-3. Select “Try it out”  
-4. Enter a player name (example: Stephen Curry)  
-5. Click Execute  
-
-This is currently the backend service used for testing and validation.  
-A user facing frontend dashboard will be built next.
-
----
-
-## 💻 How to Run Locally
-
-### 1️⃣ Clone the Repository 
-
-```bash
-git clone https://github.com/GregLivin/Court-IQ-Production.git
-cd Court-IQ-Production
-
-2️⃣ Create and Activate Virtual Environment
-Windows: python -m venv .venv
-.venv\Scripts\activate
-
-Mac / Linux:
-python -m venv .venv
-source .venv/bin/activate
-
-3️⃣ Install Dependencies
-pip install -r requirements.txt
-
-4️⃣ Run the API
-uvicorn api.main:app --reload
-
-Open in browser: http://127.0.0.1:8000/docs
-
-🎓 Learning Outcomes
-
-This project demonstrates:
-
-Data preprocessing and structured dataset management
-
-Rolling statistical analysis
-
-Backend API design and deployment
-
-Cloud hosting and production testing
-
-Collaborative GitHub workflow
-
-🚀 Future Roadmap
-
-Build Streamlit frontend dashboard
-
-Enhance prediction methodology
-
-Add validation and evaluation metrics
-
-Improve model sophistication beyond rolling averages
-
-
-## 🚀 Live Production API
-
-🔗 https://court-iq-production-1.onrender.com/docs  
-
-The backend is deployed and publicly accessible in production.
-
-Test it by:
-1. Opening the link  
-2. Clicking `/predict`  
-3. Selecting **Try it out**  
-4. Entering a player name  
-5. Clicking Execute  
+│── api/            # FastAPI routes
+│── src/            # Core logic for data processing and modeling
+│── data/
+│   └── raw/        # Raw datasets
+│── app.py          # Main entry point
+│── requirements.txt
