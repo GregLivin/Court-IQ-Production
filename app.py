@@ -70,12 +70,6 @@ h1, h2, h3, h4 {
     border-radius: 10px !important;
     font-weight: 650 !important;
 }
-
-.block-label {
-    font-size: 0.88rem;
-    color: #6b7280;
-    margin-bottom: 6px;
-}
 </style>
 """,
     unsafe_allow_html=True,
@@ -116,13 +110,10 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     """
     df = pd.read_csv(csv_path)
 
-    # Normalize all column names first
     df.columns = [str(col).strip().upper() for col in df.columns]
 
-    # Map common aliases to the column names the app expects
     rename_map = {}
 
-    # Player name aliases
     if "PLAYER" in df.columns:
         rename_map["PLAYER"] = "PLAYER_NAME"
     if "NAME" in df.columns:
@@ -134,7 +125,6 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     if "FULL_NAME" in df.columns:
         rename_map["FULL_NAME"] = "PLAYER_NAME"
 
-    # Team abbreviation aliases
     if "TEAM" in df.columns:
         rename_map["TEAM"] = "TEAM_ABBREVIATION"
     if "TEAM_ABBR" in df.columns:
@@ -146,7 +136,6 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     if "TEAMCODE" in df.columns:
         rename_map["TEAMCODE"] = "TEAM_ABBREVIATION"
 
-    # Opponent aliases
     if "OPPONENT" in df.columns:
         rename_map["OPPONENT"] = "OPP_TEAM_ABBREVIATION"
     if "OPP_TEAM" in df.columns:
@@ -156,7 +145,6 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
 
     df = df.rename(columns=rename_map)
 
-    # Build team/opponent from MATCHUP if missing
     if "MATCHUP" in df.columns:
         matchup_series = df["MATCHUP"].astype(str).str.strip()
 
@@ -166,12 +154,10 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
         if "OPP_TEAM_ABBREVIATION" not in df.columns:
             df["OPP_TEAM_ABBREVIATION"] = matchup_series.str.split().str[-1]
 
-    # Convert common text columns
     for col in ["PLAYER_NAME", "TEAM_ABBREVIATION", "MATCHUP", "OPP_TEAM_ABBREVIATION"]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
 
-    # Normalize values
     if "PLAYER_NAME" in df.columns:
         df["PLAYER_NAME"] = df["PLAYER_NAME"].replace({"nan": None, "None": None})
 
@@ -196,7 +182,6 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     if "GAME_DATE" in df.columns:
         df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"], errors="coerce")
 
-    # Normalize stat aliases if needed
     stat_rename_map = {}
     if "POINTS" in df.columns:
         stat_rename_map["POINTS"] = "PTS"
@@ -678,8 +663,7 @@ st.markdown(
     1. Choose a player and recent game sample<br/>
     2. Optionally select an opponent for matchup context<br/>
     3. Enter PTS and PRA lines<br/>
-    4. Click Predict to view projection, confidence, and over/under probabilities<br/>
-    5. Use Pick Builder to create a multi-player pool
+    4. Click Predict to view projection, confidence, and over/under probabilities
   </div>
 </div>
 """,
@@ -924,267 +908,6 @@ if do_predict:
                 st.line_chart(chart_df["AST"], height=180)
             if "PRA" in chart_df.columns:
                 st.line_chart(chart_df["PRA"], height=180)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
-# -------------------------
-# PICK BUILDER SAFETY PATCH
-# -------------------------
-if df_logs is not None:
-    df_logs.columns = [str(col).strip().upper() for col in df_logs.columns]
-
-    if "PLAYER_NAME" not in df_logs.columns:
-        if "PLAYER" in df_logs.columns:
-            df_logs = df_logs.rename(columns={"PLAYER": "PLAYER_NAME"})
-        elif "NAME" in df_logs.columns:
-            df_logs = df_logs.rename(columns={"NAME": "PLAYER_NAME"})
-
-    if "TEAM_ABBREVIATION" not in df_logs.columns and "MATCHUP" in df_logs.columns:
-        df_logs["TEAM_ABBREVIATION"] = (
-            df_logs["MATCHUP"].astype(str).str.strip().str.split().str[0]
-        )
-
-    if "OPP_TEAM_ABBREVIATION" not in df_logs.columns and "MATCHUP" in df_logs.columns:
-        df_logs["OPP_TEAM_ABBREVIATION"] = (
-            df_logs["MATCHUP"].astype(str).str.strip().str.split().str[-1]
-        )
-
-    if "TEAM_ABBREVIATION" in df_logs.columns:
-        df_logs["TEAM_ABBREVIATION"] = (
-            df_logs["TEAM_ABBREVIATION"].astype(str).str.strip().str.upper()
-        )
-
-    if "PLAYER_NAME" in df_logs.columns:
-        df_logs["PLAYER_NAME"] = df_logs["PLAYER_NAME"].astype(str).str.strip()
-
-
-# -------------------------
-# PICK BUILDER
-# -------------------------
-st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
-st.markdown("## Step 6: Pick Builder")
-st.markdown(
-    '<div class="courtiq-muted">Build a player pool and generate 2 to 8 picks using projections, probabilities, and edge.</div>',
-    unsafe_allow_html=True,
-)
-
-if df_logs is None or "TEAM_ABBREVIATION" not in df_logs.columns or "PLAYER_NAME" not in df_logs.columns:
-    st.error("Pick Builder needs TEAM_ABBREVIATION and PLAYER_NAME in the gamelog CSV.")
-else:
-    teams = sorted(df_logs["TEAM_ABBREVIATION"].dropna().unique().tolist())
-    team = st.selectbox(
-        "Select Team",
-        options=teams,
-        key="pb_team",
-        help="Choose a team to load players into the Pick Builder."
-    )
-
-    players = (
-        df_logs.loc[df_logs["TEAM_ABBREVIATION"] == team, "PLAYER_NAME"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-    players = sorted(players)
-    player_pick = st.selectbox(
-        "Select Player",
-        options=players,
-        key="pb_player",
-        help="Pick a player and add them to the pool."
-    )
-
-    if "pick_pool" not in st.session_state:
-        st.session_state.pick_pool = []
-
-    c1, c2, c3 = st.columns([1, 1, 2])
-    with c1:
-        if st.button("Add to Pool"):
-            if player_pick not in st.session_state.pick_pool:
-                st.session_state.pick_pool.append(player_pick)
-
-    with c2:
-        if st.button("Clear Pool"):
-            st.session_state.pick_pool = []
-
-    with c3:
-        st.markdown("**Current Pool**")
-        if st.session_state.pick_pool:
-            st.dataframe({"Player": st.session_state.pick_pool}, width="stretch", hide_index=True)
-        else:
-            st.info("Add players to your pool to generate pick combinations.")
-
-    num_picks = st.slider(
-        "How many picks? (2–8)",
-        2,
-        8,
-        5,
-        key="pb_num",
-        help="Choose how many final picks to generate."
-    )
-    mode = st.radio(
-        "Pick Mode",
-        ["Randomize", "Top Points", "Top Edge"],
-        horizontal=True,
-        key="pb_mode",
-        help="Top Edge ranks by strongest probability edge."
-    )
-
-    opp2 = st.selectbox("Opponent (optional, uses adjusted projection)", options=["—"] + teams, key="pb_opp")
-
-    pb1, pb2 = st.columns(2)
-    with pb1:
-        pb_pts_line = st.number_input("PTS line (Pick Builder)", min_value=0.0, value=20.5, step=0.5, key="pb_pts_line")
-    with pb2:
-        pb_pra_line = st.number_input("PRA line (Pick Builder)", min_value=0.0, value=30.5, step=0.5, key="pb_pra_line")
-
-    if st.button("Build Picks"):
-        pool = st.session_state.pick_pool
-
-        if len(pool) < num_picks:
-            st.error(f"Add at least {num_picks} players to the pool.")
-        else:
-            with st.spinner("Building picks..."):
-                rows: list[dict[str, Any]] = []
-
-                for name in pool:
-                    r = predict_from_last_n(player_name=name, n=n)
-
-                    base_pts = float(r.get("predicted_points", 0.0))
-                    base_reb = float(r.get("predicted_rebounds", 0.0))
-                    base_ast = float(r.get("predicted_assists", 0.0))
-
-                    use_pts = base_pts
-                    opp_for_sigma = None
-                    if opp2 != "—":
-                        use_pts, _note = matchup_adjusted_pts(df_logs, name, opp2, base_pts)
-                        opp_for_sigma = opp2
-
-                    use_pra = float(use_pts + base_reb + base_ast)
-
-                    pts_ou = over_under_probabilities(
-                        df=df_logs,
-                        player_name=name,
-                        n=n,
-                        line=float(pb_pts_line),
-                        stat="PTS",
-                        mu_override=use_pts if opp2 != "—" else None,
-                        opp_abbr_for_sigma=opp_for_sigma,
-                        h2h_sigma_min_games=4,
-                    )
-                    pra_ou = over_under_probabilities(
-                        df=df_logs,
-                        player_name=name,
-                        n=n,
-                        line=float(pb_pra_line),
-                        stat="PRA",
-                        mu_override=use_pra if opp2 != "—" else None,
-                        opp_abbr_for_sigma=opp_for_sigma,
-                        h2h_sigma_min_games=4,
-                    )
-
-                    pts_edge = None
-                    pts_over = None
-                    if pts_ou.get("ok"):
-                        pts_over = float(pts_ou["prob_over"])
-                        pts_edge = (pts_over - 0.5) * 100.0
-
-                    pra_edge = None
-                    pra_over = None
-                    if pra_ou.get("ok"):
-                        pra_over = float(pra_ou["prob_over"])
-                        pra_edge = (pra_over - 0.5) * 100.0
-
-                    best_edge = None
-                    candidates = [e for e in [pts_edge, pra_edge] if e is not None]
-                    if candidates:
-                        best_edge = max(candidates)
-
-                    rows.append(
-                        {
-                            "Player": r.get("player", name),
-                            "PTS": round(float(use_pts), 2),
-                            "PRA": round(float(use_pra), 2),
-                            "PTS_ProbOver": None if pts_over is None else round(pts_over * 100, 0),
-                            "PTS_Edge%": None if pts_edge is None else round(float(pts_edge), 1),
-                            "PRA_ProbOver": None if pra_over is None else round(pra_over * 100, 0),
-                            "PRA_Edge%": None if pra_edge is None else round(float(pra_edge), 1),
-                            "BestEdge%": None if best_edge is None else round(float(best_edge), 1),
-                        }
-                    )
-
-            if mode == "Top Points":
-                picks = sorted(rows, key=lambda x: x["PTS"], reverse=True)[:num_picks]
-            elif mode == "Top Edge":
-                picks = sorted(
-                    rows,
-                    key=lambda x: (
-                        x["BestEdge%"] is not None,
-                        x["BestEdge%"] if x["BestEdge%"] is not None else -999,
-                    ),
-                    reverse=True,
-                )[:num_picks]
-            else:
-                import random as _random
-                picks = _random.sample(rows, num_picks)
-
-            st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-            st.success(f"{num_picks}-Pick Set")
-
-            for idx in range(0, len(picks), 2):
-                cols = st.columns(2)
-                for j in range(2):
-                    k = idx + j
-                    if k >= len(picks):
-                        break
-
-                    p = picks[k]
-                    name = p["Player"]
-                    pts = float(p["PTS"])
-                    pra = float(p["PRA"])
-
-                    with cols[j]:
-                        team_abbr = get_player_team_abbr(df_logs, name) if df_logs is not None else None
-                        logo = logo_url_from_abbr(team_abbr, team_id_map) if team_abbr else None
-                        conf = compute_confidence_from_last_n(df_logs, name, n) if df_logs is not None else None
-
-                        st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
-
-                        tl, tr = st.columns([1, 3])
-                        with tl:
-                            if logo:
-                                st.image(logo, width=64)
-                            elif team_abbr:
-                                st.write(team_abbr)
-
-                        with tr:
-                            st.markdown(f"### {name}")
-                            subtitle = "Adjusted projection" if opp2 != "—" else "Projection"
-                            st.markdown(
-                                f'<div class="courtiq-muted">{subtitle}</div>',
-                                unsafe_allow_html=True,
-                            )
-
-                        st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-
-                        a, b, c = st.columns(3)
-                        a.metric("PTS", f"{pts:.2f}")
-                        b.metric("PRA", f"{pra:.2f}")
-                        c.metric("Confidence", f"{conf}%" if conf is not None else "—")
-
-                        st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-                        st.markdown("**Over Probabilities**")
-
-                        x, y = st.columns(2)
-                        with x:
-                            st.metric("PTS Over", f'{p.get("PTS_ProbOver")}%' if p.get("PTS_ProbOver") is not None else "—")
-                            st.caption(f'Edge: {p.get("PTS_Edge%", "—")}%')
-                        with y:
-                            st.metric("PRA Over", f'{p.get("PRA_ProbOver")}%' if p.get("PRA_ProbOver") is not None else "—")
-                            st.caption(f'Edge: {p.get("PRA_Edge%", "—")}%')
-
-                        st.caption(f'Best Edge: {p.get("BestEdge%", "—")}%')
-                        st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
