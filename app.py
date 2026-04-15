@@ -1,5 +1,5 @@
 """
-CourtIQ Streamlit app for player predictions, matchup history, and
+Court IQ Streamlit app for player predictions, matchup history, and
 over/under estimates.
 """
 
@@ -26,7 +26,7 @@ except Exception:
 # -------------------------
 # PAGE SETUP
 # -------------------------
-st.set_page_config(page_title="CourtIQ", layout="wide")
+st.set_page_config(page_title="Court IQ", layout="wide")
 
 st.markdown(
     """
@@ -70,12 +70,25 @@ h1, h2, h3, h4 {
     border-radius: 10px !important;
     font-weight: 650 !important;
 }
+
+.result-card {
+    background: linear-gradient(135deg, #111827, #1f2937);
+    padding: 20px;
+    border-radius: 16px;
+    color: white;
+    margin-top: 15px;
+    margin-bottom: 18px;
+}
+
+.result-subtle {
+    color: #9ca3af;
+}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-st.title("CourtIQ — Player Predictions")
+st.title("Court IQ — Player Predictions")
 
 
 # -------------------------
@@ -589,10 +602,10 @@ def last_games_chart_df(df: pd.DataFrame, player_name: str, k: int = 10) -> pd.D
 
 def verdict_from_prob(prob_over: float) -> tuple[str, str]:
     if prob_over >= 0.60:
-        return "Lean: OVER", "success"
+        return "Strong OVER", "success"
     if prob_over <= 0.40:
-        return "Lean: UNDER", "warning"
-    return "Lean: Unclear", "info"
+        return "Strong UNDER", "error"
+    return "No clear edge", "warning"
 
 
 # -------------------------
@@ -631,17 +644,19 @@ st.markdown(
 st.markdown(
     """
 <div class="courtiq-card">
-  <div style="font-size:1.1rem; font-weight:800; margin-bottom:8px;">How to use CourtIQ</div>
+  <div style="font-size:1.1rem; font-weight:800; margin-bottom:8px;">How to use Court IQ</div>
   <div class="courtiq-muted">
     1. Choose a player and recent game sample<br/>
     2. Optionally select an opponent for matchup context<br/>
     3. Enter PTS and PRA lines<br/>
-    4. Click Predict to view projection, confidence, and over/under probabilities
+    4. Click Generate Prediction to view projection, confidence, and over/under probabilities
   </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
+
+st.info("Tip: Look for confidence above 70% for more stable players.")
 
 
 # -------------------------
@@ -654,14 +669,29 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+players_list: list[str] = []
+default_index = 0
+if df_logs is not None and "PLAYER_NAME" in df_logs.columns:
+    players_list = sorted(df_logs["PLAYER_NAME"].dropna().unique().tolist())
+    if "Kevin Durant" in players_list:
+        default_index = players_list.index("Kevin Durant")
+
 left_input, right_input = st.columns([2, 1])
 
 with left_input:
-    player = st.text_input(
-        "Player name",
-        value="Kevin Durant",
-        help="Enter the player you want to analyze."
-    )
+    if players_list:
+        player = st.selectbox(
+            "Select player",
+            options=players_list,
+            index=default_index,
+            help="Choose the player you want to analyze."
+        )
+    else:
+        player = st.text_input(
+            "Player name",
+            value="Kevin Durant",
+            help="Enter the player you want to analyze."
+        )
 
 with right_input:
     n = st.slider(
@@ -706,7 +736,7 @@ note_col, btn_col = st.columns([3, 1])
 with note_col:
     st.caption("Tip: Higher confidence usually means the player has been more consistent recently.")
 with btn_col:
-    do_predict = st.button("Predict", use_container_width=True)
+    do_predict = st.button("Generate Prediction", use_container_width=True)
 
 if do_predict:
     if df_logs is None:
@@ -757,6 +787,30 @@ if do_predict:
                 h2h_sigma_min_games=4,
             )
 
+        st.markdown("---")
+        st.markdown("## Results")
+
+        # 1. Prediction result card
+        st.markdown(
+            f"""
+            <div class="result-card">
+                <div style="font-size: 1.2rem; font-weight: 700;">
+                    {player} Projection
+                </div>
+                <div style="font-size: 2.2rem; font-weight: 800; margin-top: 8px;">
+                    {adj_pts:.1f} PTS
+                </div>
+                <div style="margin-top: 6px;">
+                    PRA: {adj_pra:.1f}
+                </div>
+                <div style="margin-top: 10px;" class="result-subtle">
+                    Confidence: {conf if conf is not None else "—"}%
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
         st.markdown("### Step 2: Best Insight")
 
         summary1, summary2, summary3, summary4 = st.columns(4)
@@ -765,14 +819,27 @@ if do_predict:
         summary3.metric("PTS Over Chance", f"{pts_ou['prob_over']*100:.0f}%" if pts_ou.get("ok") else "—")
         summary4.metric("Confidence", f"{conf}%" if conf is not None else "—")
 
+        # 2. Color-coded betting decision
         if pts_ou.get("ok"):
-            verdict_text, verdict_type = verdict_from_prob(float(pts_ou["prob_over"]))
+            prob = float(pts_ou["prob_over"])
+            verdict_text, verdict_type = verdict_from_prob(prob)
+
             if verdict_type == "success":
-                st.success(verdict_text)
-            elif verdict_type == "warning":
-                st.warning(verdict_text)
+                st.success(f"{verdict_text} ({prob*100:.0f}% over)")
+            elif verdict_type == "error":
+                st.error(f"{verdict_text} ({(1 - prob)*100:.0f}% under)")
             else:
-                st.info(verdict_text)
+                st.warning(verdict_text)
+
+        # 3. Why this pick explanation
+        st.markdown("### Why this projection")
+        st.write(
+            f"""
+- Based on the last {n} games
+- Matchup adjustment: {adj_note}
+- Player consistency score: {conf if conf is not None else "N/A"}%
+"""
+        )
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
@@ -892,7 +959,7 @@ st.markdown(
     """
 <div class="courtiq-card">
   <div class="courtiq-muted">
-    CourtIQ provides data-driven projections for research and entertainment purposes.
+    Court IQ provides data-driven projections for research and entertainment purposes.
   </div>
 </div>
 """,
