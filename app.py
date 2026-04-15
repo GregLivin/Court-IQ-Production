@@ -929,6 +929,37 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 
 # -------------------------
+# PICK BUILDER SAFETY PATCH
+# -------------------------
+if df_logs is not None:
+    df_logs.columns = [str(col).strip().upper() for col in df_logs.columns]
+
+    if "PLAYER_NAME" not in df_logs.columns:
+        if "PLAYER" in df_logs.columns:
+            df_logs = df_logs.rename(columns={"PLAYER": "PLAYER_NAME"})
+        elif "NAME" in df_logs.columns:
+            df_logs = df_logs.rename(columns={"NAME": "PLAYER_NAME"})
+
+    if "TEAM_ABBREVIATION" not in df_logs.columns and "MATCHUP" in df_logs.columns:
+        df_logs["TEAM_ABBREVIATION"] = (
+            df_logs["MATCHUP"].astype(str).str.strip().str.split().str[0]
+        )
+
+    if "OPP_TEAM_ABBREVIATION" not in df_logs.columns and "MATCHUP" in df_logs.columns:
+        df_logs["OPP_TEAM_ABBREVIATION"] = (
+            df_logs["MATCHUP"].astype(str).str.strip().str.split().str[-1]
+        )
+
+    if "TEAM_ABBREVIATION" in df_logs.columns:
+        df_logs["TEAM_ABBREVIATION"] = (
+            df_logs["TEAM_ABBREVIATION"].astype(str).str.strip().str.upper()
+        )
+
+    if "PLAYER_NAME" in df_logs.columns:
+        df_logs["PLAYER_NAME"] = df_logs["PLAYER_NAME"].astype(str).str.strip()
+
+
+# -------------------------
 # PICK BUILDER
 # -------------------------
 st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
