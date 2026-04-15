@@ -594,6 +594,12 @@ team_id_map: dict[str, int] = {}
 if DATA_PATH.exists():
     df_logs = load_gamelogs(DATA_PATH)
     team_id_map = build_team_id_map()
+
+    # Debug lines
+    st.write("Loaded columns:", list(df_logs.columns))
+    debug_cols = [c for c in ["PLAYER_NAME", "TEAM_ABBREVIATION", "OPP_TEAM_ABBREVIATION"] if c in df_logs.columns]
+    if debug_cols:
+        st.write(df_logs[debug_cols].head())
 else:
     st.warning(f"Could not find gamelog file: {DATA_PATH}")
 
