@@ -229,6 +229,23 @@ def build_team_id_map() -> dict[str, int]:
     }
 
 
+@st.cache_data
+def build_player_id_map(df: pd.DataFrame) -> dict[str, int]:
+    """
+    Build a player name to player ID map from the gamelog dataframe.
+    """
+    if "PLAYER_NAME" not in df.columns or "PLAYER_ID" not in df.columns:
+        return {}
+
+    temp = df[["PLAYER_NAME", "PLAYER_ID"]].dropna().copy()
+    temp["PLAYER_NAME"] = temp["PLAYER_NAME"].astype(str).str.strip()
+    temp["PLAYER_ID"] = pd.to_numeric(temp["PLAYER_ID"], errors="coerce")
+    temp = temp.dropna(subset=["PLAYER_ID"])
+    temp = temp.drop_duplicates(subset=["PLAYER_NAME"], keep="last")
+
+    return {row["PLAYER_NAME"]: int(row["PLAYER_ID"]) for _, row in temp.iterrows()}
+
+
 def logo_url_from_team_id(team_id: int) -> str:
     return f"https://cdn.nba.com/logos/nba/{team_id}/global/L/logo.png"
 
@@ -246,6 +263,13 @@ def logo_url_from_abbr(team_abbr: str, team_id_map: dict[str, int]) -> str | Non
         return logo_url_from_team_id(team_id_map[abbr])
 
     return f"https://a.espncdn.com/i/teamlogos/nba/500/{abbr.lower()}.png"
+
+
+def player_headshot_url(player_id: int) -> str:
+    """
+    Return NBA player headshot URL.
+    """
+    return f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
 
 
 def get_player_team_abbr(df: pd.DataFrame, player_name: str) -> str | None:
@@ -613,10 +637,12 @@ def verdict_from_prob(prob_over: float) -> tuple[str, str]:
 # -------------------------
 df_logs = None
 team_id_map: dict[str, int] = {}
+player_id_map: dict[str, int] = {}
 
 if DATA_PATH.exists():
     df_logs = load_gamelogs(DATA_PATH)
     team_id_map = build_team_id_map()
+    player_id_map = build_player_id_map(df_logs)
 else:
     st.warning(f"Could not find gamelog file: {DATA_PATH}")
 
@@ -760,6 +786,8 @@ if do_predict:
             adj_pra = float(adj_pts + base_reb + base_ast)
 
             p_team = get_player_team_abbr(df_logs, player)
+            player_id = player_id_map.get(player)
+            headshot = player_headshot_url(player_id) if player_id else None
             p_logo = logo_url_from_abbr(p_team, team_id_map) if p_team else None
             opp_logo = logo_url_from_abbr(opp_abbr, team_id_map) if (opp_abbr and opp_abbr != "—") else None
 
@@ -790,26 +818,32 @@ if do_predict:
         st.markdown("---")
         st.markdown("## Results")
 
-        # 1. Prediction result card
-        st.markdown(
-            f"""
-            <div class="result-card">
-                <div style="font-size: 1.2rem; font-weight: 700;">
-                    {player} Projection
+        card_col1, card_col2 = st.columns([1, 4])
+
+        with card_col1:
+            if headshot:
+                st.image(headshot, width=140)
+
+        with card_col2:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div style="font-size: 1.2rem; font-weight: 700;">
+                        {player} Projection
+                    </div>
+                    <div style="font-size: 2.2rem; font-weight: 800; margin-top: 8px;">
+                        {adj_pts:.1f} PTS
+                    </div>
+                    <div style="margin-top: 6px;">
+                        PRA: {adj_pra:.1f}
+                    </div>
+                    <div style="margin-top: 10px;" class="result-subtle">
+                        Confidence: {conf if conf is not None else "—"}%
+                    </div>
                 </div>
-                <div style="font-size: 2.2rem; font-weight: 800; margin-top: 8px;">
-                    {adj_pts:.1f} PTS
-                </div>
-                <div style="margin-top: 6px;">
-                    PRA: {adj_pra:.1f}
-                </div>
-                <div style="margin-top: 10px;" class="result-subtle">
-                    Confidence: {conf if conf is not None else "—"}%
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
         st.markdown("### Step 2: Best Insight")
 
@@ -819,7 +853,6 @@ if do_predict:
         summary3.metric("PTS Over Chance", f"{pts_ou['prob_over']*100:.0f}%" if pts_ou.get("ok") else "—")
         summary4.metric("Confidence", f"{conf}%" if conf is not None else "—")
 
-        # 2. Color-coded betting decision
         if pts_ou.get("ok"):
             prob = float(pts_ou["prob_over"])
             verdict_text, verdict_type = verdict_from_prob(prob)
@@ -831,7 +864,6 @@ if do_predict:
             else:
                 st.warning(verdict_text)
 
-        # 3. Why this pick explanation
         st.markdown("### Why this projection")
         st.write(
             f"""
