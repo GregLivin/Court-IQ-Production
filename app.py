@@ -349,16 +349,10 @@ def get_matchup_history(df: pd.DataFrame, player_name: str, opp_abbr: str, last_
 
 
 def normal_cdf(z: float) -> float:
-    """
-    Standard normal cumulative distribution function.
-    """
     return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
 
 
 def normal_prob_over(mu: float, sigma: float, line: float) -> float:
-    """
-    Return the probability of going over a stat line.
-    """
     if sigma <= 1e-9:
         return 1.0 if mu > line else 0.0
 
@@ -368,9 +362,6 @@ def normal_prob_over(mu: float, sigma: float, line: float) -> float:
 
 
 def last_n_series(df: pd.DataFrame, player_name: str, col: str, n: int) -> pd.Series:
-    """
-    Return the last N values for one stat.
-    """
     if "PLAYER_NAME" not in df.columns or col not in df.columns:
         return pd.Series(dtype=float)
 
@@ -386,9 +377,6 @@ def last_n_series(df: pd.DataFrame, player_name: str, col: str, n: int) -> pd.Se
 
 
 def last_n_pra_series(df: pd.DataFrame, player_name: str, n: int) -> pd.Series:
-    """
-    Return the last N PRA values.
-    """
     pts = last_n_series(df, player_name, "PTS", n)
     reb = last_n_series(df, player_name, "REB", n)
     ast = last_n_series(df, player_name, "AST", n)
@@ -412,9 +400,6 @@ def sigma_with_fallback(
     h2h_sigma_min_games: int = 4,
     safe_fallback_sigma: float = 6.0,
 ) -> tuple[float, str]:
-    """
-    Choose sigma from H2H data first, then recent games, then a fallback value.
-    """
     if opp_abbr_for_sigma:
         hist = get_matchup_history(df, player_name, opp_abbr_for_sigma, last_k=50)
         if not hist.empty:
@@ -442,9 +427,6 @@ def sigma_with_fallback(
 
 
 def matchup_adjusted_pts(df: pd.DataFrame, player_name: str, opp_abbr: str, base_pts: float) -> tuple[float, str]:
-    """
-    Apply a small matchup adjustment to the base points projection.
-    """
     opp_abbr = str(opp_abbr).upper().strip()
     hist = get_matchup_history(df, player_name, opp_abbr, last_k=20)
 
@@ -484,9 +466,6 @@ def over_under_probabilities(
     opp_abbr_for_sigma: str | None,
     h2h_sigma_min_games: int = 4,
 ) -> dict[str, Any]:
-    """
-    Compute over and under probabilities using a normal distribution.
-    """
     try:
         line = float(line)
     except Exception:
@@ -532,9 +511,6 @@ def over_under_probabilities(
 
 
 def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataFrame:
-    """
-    Build a table for the player's last K games.
-    """
     if "PLAYER_NAME" not in df.columns:
         return pd.DataFrame()
 
@@ -586,9 +562,6 @@ def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataF
 
 
 def last_games_chart_df(df: pd.DataFrame, player_name: str, k: int = 10) -> pd.DataFrame:
-    """
-    Build a small dataframe for recent trend charts.
-    """
     if "PLAYER_NAME" not in df.columns:
         return pd.DataFrame()
 
