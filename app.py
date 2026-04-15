@@ -71,6 +71,7 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     """
     Load and clean the gamelog file used by the app.
     Handles common column-name variations automatically.
+    Builds TEAM_ABBREVIATION and OPP_TEAM_ABBREVIATION from MATCHUP if needed.
     """
     df = pd.read_csv(csv_path)
 
@@ -114,14 +115,25 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
 
     df = df.rename(columns=rename_map)
 
+    # Build team/opponent from MATCHUP if missing
+    if "MATCHUP" in df.columns:
+        matchup_series = df["MATCHUP"].astype(str).str.strip()
+
+        if "TEAM_ABBREVIATION" not in df.columns:
+            df["TEAM_ABBREVIATION"] = matchup_series.str.split().str[0]
+
+        if "OPP_TEAM_ABBREVIATION" not in df.columns:
+            df["OPP_TEAM_ABBREVIATION"] = matchup_series.str.split().str[-1]
+
     # Convert common text columns
     for col in ["PLAYER_NAME", "TEAM_ABBREVIATION", "MATCHUP", "OPP_TEAM_ABBREVIATION"]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
 
-    # Normalize player/team values too
+    # Normalize values
     if "PLAYER_NAME" in df.columns:
         df["PLAYER_NAME"] = df["PLAYER_NAME"].replace({"nan": None, "None": None})
+
     if "TEAM_ABBREVIATION" in df.columns:
         df["TEAM_ABBREVIATION"] = (
             df["TEAM_ABBREVIATION"]
@@ -130,6 +142,7 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
             .str.upper()
             .replace({"NAN": None, "NONE": None})
         )
+
     if "OPP_TEAM_ABBREVIATION" in df.columns:
         df["OPP_TEAM_ABBREVIATION"] = (
             df["OPP_TEAM_ABBREVIATION"]
