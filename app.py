@@ -23,27 +23,59 @@ except Exception:
     static_teams = None
 
 
-# Page setup
+# -------------------------
+# PAGE SETUP
+# -------------------------
 st.set_page_config(page_title="CourtIQ", layout="wide")
 
 st.markdown(
     """
 <style>
-.stApp { background: #ffffff; color: #000000; }
-h1,h2,h3,h4 { color: #000000; }
-
-.courtiq-card {
-  background: #f6f7f9;
-  border: 1px solid #d9dde3;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 14px;
+.stApp {
+    background: #ffffff;
+    color: #111827;
 }
 
-.courtiq-muted { color: #4b5563; font-size: 0.92rem; }
-.courtiq-divider { border-top: 1px solid #d9dde3; margin: 12px 0; }
+h1, h2, h3, h4 {
+    color: #111827;
+}
 
-.stButton button { border-radius: 10px !important; font-weight: 650 !important; }
+.courtiq-hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    border: 1px solid #dbe4ff;
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 18px;
+}
+
+.courtiq-card {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+}
+
+.courtiq-muted {
+    color: #4b5563;
+    font-size: 0.96rem;
+}
+
+.courtiq-divider {
+    border-top: 1px solid #e5e7eb;
+    margin: 14px 0;
+}
+
+.stButton button {
+    border-radius: 10px !important;
+    font-weight: 650 !important;
+}
+
+.block-label {
+    font-size: 0.88rem;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -52,6 +84,9 @@ h1,h2,h3,h4 { color: #000000; }
 st.title("CourtIQ — Player Predictions")
 
 
+# -------------------------
+# DATA HELPERS
+# -------------------------
 def newest_gamelog_csv() -> Path:
     """
     Return the newest regular season gamelog file in data/raw.
@@ -588,31 +623,57 @@ def last_games_chart_df(df: pd.DataFrame, player_name: str, k: int = 10) -> pd.D
     return out
 
 
+def verdict_from_prob(prob_over: float) -> tuple[str, str]:
+    if prob_over >= 0.60:
+        return "Lean: OVER", "success"
+    if prob_over <= 0.40:
+        return "Lean: UNDER", "warning"
+    return "Lean: Unclear", "info"
+
+
+# -------------------------
+# LOAD DATA
+# -------------------------
 df_logs = None
 team_id_map: dict[str, int] = {}
 
 if DATA_PATH.exists():
     df_logs = load_gamelogs(DATA_PATH)
     team_id_map = build_team_id_map()
-
-    # Debug lines
-    st.write("Loaded columns:", list(df_logs.columns))
-    debug_cols = [c for c in ["PLAYER_NAME", "TEAM_ABBREVIATION", "OPP_TEAM_ABBREVIATION"] if c in df_logs.columns]
-    if debug_cols:
-        st.write(df_logs[debug_cols].head())
 else:
     st.warning(f"Could not find gamelog file: {DATA_PATH}")
 
 
+# -------------------------
+# HERO / INTRO
+# -------------------------
 st.markdown(
     f"""
+<div class="courtiq-hero">
+  <div style="font-size:1.4rem; font-weight:800; margin-bottom:8px;">
+    Smarter NBA prop insights in seconds
+  </div>
+  <div class="courtiq-muted" style="margin-bottom:10px;">
+    Use recent game trends, matchup context, and probability estimates to make faster player prop decisions.
+  </div>
+  <div class="courtiq-muted">
+    Current dataset: <b>{DATA_PATH.name}</b>
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
 <div class="courtiq-card">
-  <div style="font-weight:700; font-size:1.05rem;">Quick guide</div>
-  <div class="courtiq-muted" style="margin-top:6px;">
-    • Enter a player name and choose Last N games<br/>
-    • Optional: choose an opponent to apply matchup-adjusted PTS + show matchup history<br/>
-    • Enter PTS and PRA lines for Over/Under probabilities<br/>
-    <span style="font-size:0.88rem;">Using file: <b>{DATA_PATH.name}</b></span>
+  <div style="font-size:1.1rem; font-weight:800; margin-bottom:8px;">How to use CourtIQ</div>
+  <div class="courtiq-muted">
+    1. Choose a player and recent game sample<br/>
+    2. Optionally select an opponent for matchup context<br/>
+    3. Enter PTS and PRA lines<br/>
+    4. Click Predict to view projection, confidence, and over/under probabilities<br/>
+    5. Use Pick Builder to create a multi-player pool
   </div>
 </div>
 """,
@@ -620,15 +681,33 @@ st.markdown(
 )
 
 
+# -------------------------
+# SINGLE PLAYER PREDICTION
+# -------------------------
 st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
-st.markdown("## Single Player Prediction")
+st.markdown("## Step 1: Single Player Prediction")
 st.markdown(
-    '<div class="courtiq-muted">Base projection + optional matchup-adjusted PTS + matchup-aware Over/Under probability.</div>',
+    '<div class="courtiq-muted">Analyze one player using recent performance, matchup history, and projected over/under probability.</div>',
     unsafe_allow_html=True,
 )
 
-player = st.text_input("Player name", value="Kevin Durant")
-n = st.slider("Last N games", min_value=1, max_value=10, value=5)
+left_input, right_input = st.columns([2, 1])
+
+with left_input:
+    player = st.text_input(
+        "Player name",
+        value="Kevin Durant",
+        help="Enter the player you want to analyze."
+    )
+
+with right_input:
+    n = st.slider(
+        "Last N games",
+        min_value=1,
+        max_value=10,
+        value=5,
+        help="How many recent games to use in the projection."
+    )
 
 opp_abbr = None
 teams_list: list[str] = []
@@ -637,19 +716,32 @@ if df_logs is not None and "TEAM_ABBREVIATION" in df_logs.columns:
     opp_abbr = st.selectbox(
         "Opponent (optional, for matchup history + adjusted PTS)",
         options=["—"] + teams_list,
+        help="Optional opponent selection for matchup-adjusted points and head-to-head history."
     )
 
 c_line1, c_line2 = st.columns(2)
 with c_line1:
-    pts_line = st.number_input("PTS line (for Over/Under probability)", min_value=0.0, value=13.5, step=0.5)
+    pts_line = st.number_input(
+        "PTS line (for Over/Under probability)",
+        min_value=0.0,
+        value=13.5,
+        step=0.5,
+        help="Betting line for points."
+    )
 with c_line2:
-    pra_line = st.number_input("PRA line (for Over/Under probability)", min_value=0.0, value=25.5, step=0.5)
+    pra_line = st.number_input(
+        "PRA line (for Over/Under probability)",
+        min_value=0.0,
+        value=25.5,
+        step=0.5,
+        help="Points + Rebounds + Assists line."
+    )
 
 st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
 note_col, btn_col = st.columns([3, 1])
 with note_col:
-    st.caption("Tip: If you don’t see recent games, make sure you fetched the newest season CSV (2025–26).")
+    st.caption("Tip: Higher confidence usually means the player has been more consistent recently.")
 with btn_col:
     do_predict = st.button("Predict", use_container_width=True)
 
@@ -657,49 +749,67 @@ if do_predict:
     if df_logs is None:
         st.error("Gamelog dataset is missing. Add a CSV into data/raw and re-run the app.")
     else:
-        result = predict_from_last_n(player_name=player, n=n)
+        with st.spinner("Analyzing player data..."):
+            result = predict_from_last_n(player_name=player, n=n)
 
-        base_pts = float(result.get("predicted_points", 0.0))
-        base_reb = float(result.get("predicted_rebounds", 0.0))
-        base_ast = float(result.get("predicted_assists", 0.0))
+            base_pts = float(result.get("predicted_points", 0.0))
+            base_reb = float(result.get("predicted_rebounds", 0.0))
+            base_ast = float(result.get("predicted_assists", 0.0))
 
-        adj_pts = base_pts
-        adj_note = "No opponent selected. Using base PTS."
-        opp_for_sigma = None
+            adj_pts = base_pts
+            adj_note = "No opponent selected. Using base PTS."
+            opp_for_sigma = None
 
-        if opp_abbr and opp_abbr != "—":
-            adj_pts, adj_note = matchup_adjusted_pts(df_logs, player, opp_abbr, base_pts)
-            opp_for_sigma = opp_abbr
+            if opp_abbr and opp_abbr != "—":
+                adj_pts, adj_note = matchup_adjusted_pts(df_logs, player, opp_abbr, base_pts)
+                opp_for_sigma = opp_abbr
 
-        adj_pra = float(adj_pts + base_reb + base_ast)
+            adj_pra = float(adj_pts + base_reb + base_ast)
 
-        p_team = get_player_team_abbr(df_logs, player)
-        p_logo = logo_url_from_abbr(p_team, team_id_map) if p_team else None
-        opp_logo = logo_url_from_abbr(opp_abbr, team_id_map) if (opp_abbr and opp_abbr != "—") else None
+            p_team = get_player_team_abbr(df_logs, player)
+            p_logo = logo_url_from_abbr(p_team, team_id_map) if p_team else None
+            opp_logo = logo_url_from_abbr(opp_abbr, team_id_map) if (opp_abbr and opp_abbr != "—") else None
 
-        conf = compute_confidence_from_last_n(df_logs, player, n)
+            conf = compute_confidence_from_last_n(df_logs, player, n)
 
-        pts_ou = over_under_probabilities(
-            df=df_logs,
-            player_name=player,
-            n=n,
-            line=float(pts_line),
-            stat="PTS",
-            mu_override=float(adj_pts),
-            opp_abbr_for_sigma=opp_for_sigma,
-            h2h_sigma_min_games=4,
-        )
+            pts_ou = over_under_probabilities(
+                df=df_logs,
+                player_name=player,
+                n=n,
+                line=float(pts_line),
+                stat="PTS",
+                mu_override=float(adj_pts),
+                opp_abbr_for_sigma=opp_for_sigma,
+                h2h_sigma_min_games=4,
+            )
 
-        pra_ou = over_under_probabilities(
-            df=df_logs,
-            player_name=player,
-            n=n,
-            line=float(pra_line),
-            stat="PRA",
-            mu_override=float(adj_pra),
-            opp_abbr_for_sigma=opp_for_sigma,
-            h2h_sigma_min_games=4,
-        )
+            pra_ou = over_under_probabilities(
+                df=df_logs,
+                player_name=player,
+                n=n,
+                line=float(pra_line),
+                stat="PRA",
+                mu_override=float(adj_pra),
+                opp_abbr_for_sigma=opp_for_sigma,
+                h2h_sigma_min_games=4,
+            )
+
+        st.markdown("### Step 2: Best Insight")
+
+        summary1, summary2, summary3, summary4 = st.columns(4)
+        summary1.metric("Projected PTS", f"{adj_pts:.2f}")
+        summary2.metric("Projected PRA", f"{adj_pra:.2f}")
+        summary3.metric("PTS Over Chance", f"{pts_ou['prob_over']*100:.0f}%" if pts_ou.get("ok") else "—")
+        summary4.metric("Confidence", f"{conf}%" if conf is not None else "—")
+
+        if pts_ou.get("ok"):
+            verdict_text, verdict_type = verdict_from_prob(float(pts_ou["prob_over"]))
+            if verdict_type == "success":
+                st.success(verdict_text)
+            elif verdict_type == "warning":
+                st.warning(verdict_text)
+            else:
+                st.info(verdict_text)
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
@@ -711,8 +821,8 @@ if do_predict:
                 st.write(p_team)
 
         with head_mid:
-            st.markdown("### Projection")
-            st.caption("Base projection with an optional matchup layer when an opponent is selected.")
+            st.markdown("### Step 3: Projection Details")
+            st.caption("Base projection with optional matchup adjustment.")
 
         with head_right:
             if opp_logo:
@@ -727,23 +837,24 @@ if do_predict:
         m4.metric("AST", f"{base_ast:.2f}")
         m5.metric("PRA (Adj)", f"{adj_pra:.2f}")
 
-        st.markdown("#### How the adjusted PTS was calculated")
+        st.markdown("#### Matchup adjustment note")
         st.write(adj_note)
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
         if conf is not None:
             st.metric("Confidence (Consistency)", f"{conf}%")
-            st.caption("Based on how steady the player's last N games have been.")
+            st.caption("Higher confidence means the player's recent results have been more consistent.")
         else:
             st.metric("Confidence (Consistency)", "—")
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### Over / Under Probabilities")
+        st.markdown("### Step 4: Over / Under Probabilities")
 
         ou1, ou2 = st.columns(2)
 
         with ou1:
             st.markdown("**PTS Line**")
+            st.caption("PTS = Points")
             if pts_ou.get("ok"):
                 st.metric("Line", f"{pts_ou['line']:.1f}")
                 st.metric("Prob OVER", f"{pts_ou['prob_over']*100:.0f}%")
@@ -755,6 +866,7 @@ if do_predict:
 
         with ou2:
             st.markdown("**PRA Line**")
+            st.caption("PRA = Points + Rebounds + Assists")
             if pra_ou.get("ok"):
                 st.metric("Line", f"{pra_ou['line']:.1f}")
                 st.metric("Prob OVER", f"{pra_ou['prob_over']*100:.0f}%")
@@ -766,11 +878,11 @@ if do_predict:
 
         if opp_abbr and opp_abbr != "—":
             st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-            st.markdown("### Matchup History")
+            st.markdown("### Step 5: Matchup History")
 
             hist = get_matchup_history(df_logs, player, opp_abbr, last_k=10)
             if hist.empty:
-                st.info("No matchup history found (or dataset is missing matchup columns).")
+                st.info("No matchup history found for this player and opponent.")
             else:
                 st.dataframe(hist, width="stretch", hide_index=True)
 
@@ -810,10 +922,13 @@ if do_predict:
 st.markdown("</div>", unsafe_allow_html=True)
 
 
+# -------------------------
+# PICK BUILDER
+# -------------------------
 st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
-st.markdown("## Pick Builder")
+st.markdown("## Step 6: Pick Builder")
 st.markdown(
-    '<div class="courtiq-muted">Build a player pool, then generate 2 to 8 picks.</div>',
+    '<div class="courtiq-muted">Build a player pool and generate 2 to 8 picks using projections, probabilities, and edge.</div>',
     unsafe_allow_html=True,
 )
 
@@ -821,7 +936,12 @@ if df_logs is None or "TEAM_ABBREVIATION" not in df_logs.columns or "PLAYER_NAME
     st.error("Pick Builder needs TEAM_ABBREVIATION and PLAYER_NAME in the gamelog CSV.")
 else:
     teams = sorted(df_logs["TEAM_ABBREVIATION"].dropna().unique().tolist())
-    team = st.selectbox("Select Team", options=teams, key="pb_team")
+    team = st.selectbox(
+        "Select Team",
+        options=teams,
+        key="pb_team",
+        help="Choose a team to load players into the Pick Builder."
+    )
 
     players = (
         df_logs.loc[df_logs["TEAM_ABBREVIATION"] == team, "PLAYER_NAME"]
@@ -830,7 +950,12 @@ else:
         .tolist()
     )
     players = sorted(players)
-    player_pick = st.selectbox("Select Player", options=players, key="pb_player")
+    player_pick = st.selectbox(
+        "Select Player",
+        options=players,
+        key="pb_player",
+        help="Pick a player and add them to the pool."
+    )
 
     if "pick_pool" not in st.session_state:
         st.session_state.pick_pool = []
@@ -850,10 +975,23 @@ else:
         if st.session_state.pick_pool:
             st.dataframe({"Player": st.session_state.pick_pool}, width="stretch", hide_index=True)
         else:
-            st.write("—")
+            st.info("Add players to your pool to generate pick combinations.")
 
-    num_picks = st.slider("How many picks? (2–8)", 2, 8, 5, key="pb_num")
-    mode = st.radio("Pick Mode", ["Randomize", "Top Points", "Top Edge"], horizontal=True, key="pb_mode")
+    num_picks = st.slider(
+        "How many picks? (2–8)",
+        2,
+        8,
+        5,
+        key="pb_num",
+        help="Choose how many final picks to generate."
+    )
+    mode = st.radio(
+        "Pick Mode",
+        ["Randomize", "Top Points", "Top Edge"],
+        horizontal=True,
+        key="pb_mode",
+        help="Top Edge ranks by strongest probability edge."
+    )
 
     opp2 = st.selectbox("Opponent (optional, uses adjusted projection)", options=["—"] + teams, key="pb_opp")
 
@@ -869,73 +1007,74 @@ else:
         if len(pool) < num_picks:
             st.error(f"Add at least {num_picks} players to the pool.")
         else:
-            rows: list[dict[str, Any]] = []
+            with st.spinner("Building picks..."):
+                rows: list[dict[str, Any]] = []
 
-            for name in pool:
-                r = predict_from_last_n(player_name=name, n=n)
+                for name in pool:
+                    r = predict_from_last_n(player_name=name, n=n)
 
-                base_pts = float(r.get("predicted_points", 0.0))
-                base_reb = float(r.get("predicted_rebounds", 0.0))
-                base_ast = float(r.get("predicted_assists", 0.0))
+                    base_pts = float(r.get("predicted_points", 0.0))
+                    base_reb = float(r.get("predicted_rebounds", 0.0))
+                    base_ast = float(r.get("predicted_assists", 0.0))
 
-                use_pts = base_pts
-                opp_for_sigma = None
-                if opp2 != "—":
-                    use_pts, _note = matchup_adjusted_pts(df_logs, name, opp2, base_pts)
-                    opp_for_sigma = opp2
+                    use_pts = base_pts
+                    opp_for_sigma = None
+                    if opp2 != "—":
+                        use_pts, _note = matchup_adjusted_pts(df_logs, name, opp2, base_pts)
+                        opp_for_sigma = opp2
 
-                use_pra = float(use_pts + base_reb + base_ast)
+                    use_pra = float(use_pts + base_reb + base_ast)
 
-                pts_ou = over_under_probabilities(
-                    df=df_logs,
-                    player_name=name,
-                    n=n,
-                    line=float(pb_pts_line),
-                    stat="PTS",
-                    mu_override=use_pts if opp2 != "—" else None,
-                    opp_abbr_for_sigma=opp_for_sigma,
-                    h2h_sigma_min_games=4,
-                )
-                pra_ou = over_under_probabilities(
-                    df=df_logs,
-                    player_name=name,
-                    n=n,
-                    line=float(pb_pra_line),
-                    stat="PRA",
-                    mu_override=use_pra if opp2 != "—" else None,
-                    opp_abbr_for_sigma=opp_for_sigma,
-                    h2h_sigma_min_games=4,
-                )
+                    pts_ou = over_under_probabilities(
+                        df=df_logs,
+                        player_name=name,
+                        n=n,
+                        line=float(pb_pts_line),
+                        stat="PTS",
+                        mu_override=use_pts if opp2 != "—" else None,
+                        opp_abbr_for_sigma=opp_for_sigma,
+                        h2h_sigma_min_games=4,
+                    )
+                    pra_ou = over_under_probabilities(
+                        df=df_logs,
+                        player_name=name,
+                        n=n,
+                        line=float(pb_pra_line),
+                        stat="PRA",
+                        mu_override=use_pra if opp2 != "—" else None,
+                        opp_abbr_for_sigma=opp_for_sigma,
+                        h2h_sigma_min_games=4,
+                    )
 
-                pts_edge = None
-                pts_over = None
-                if pts_ou.get("ok"):
-                    pts_over = float(pts_ou["prob_over"])
-                    pts_edge = (pts_over - 0.5) * 100.0
+                    pts_edge = None
+                    pts_over = None
+                    if pts_ou.get("ok"):
+                        pts_over = float(pts_ou["prob_over"])
+                        pts_edge = (pts_over - 0.5) * 100.0
 
-                pra_edge = None
-                pra_over = None
-                if pra_ou.get("ok"):
-                    pra_over = float(pra_ou["prob_over"])
-                    pra_edge = (pra_over - 0.5) * 100.0
+                    pra_edge = None
+                    pra_over = None
+                    if pra_ou.get("ok"):
+                        pra_over = float(pra_ou["prob_over"])
+                        pra_edge = (pra_over - 0.5) * 100.0
 
-                best_edge = None
-                candidates = [e for e in [pts_edge, pra_edge] if e is not None]
-                if candidates:
-                    best_edge = max(candidates)
+                    best_edge = None
+                    candidates = [e for e in [pts_edge, pra_edge] if e is not None]
+                    if candidates:
+                        best_edge = max(candidates)
 
-                rows.append(
-                    {
-                        "Player": r.get("player", name),
-                        "PTS": round(float(use_pts), 2),
-                        "PRA": round(float(use_pra), 2),
-                        "PTS_ProbOver": None if pts_over is None else round(pts_over * 100, 0),
-                        "PTS_Edge%": None if pts_edge is None else round(float(pts_edge), 1),
-                        "PRA_ProbOver": None if pra_over is None else round(pra_over * 100, 0),
-                        "PRA_Edge%": None if pra_edge is None else round(float(pra_edge), 1),
-                        "BestEdge%": None if best_edge is None else round(float(best_edge), 1),
-                    }
-                )
+                    rows.append(
+                        {
+                            "Player": r.get("player", name),
+                            "PTS": round(float(use_pts), 2),
+                            "PRA": round(float(use_pra), 2),
+                            "PTS_ProbOver": None if pts_over is None else round(pts_over * 100, 0),
+                            "PTS_Edge%": None if pts_edge is None else round(float(pts_edge), 1),
+                            "PRA_ProbOver": None if pra_over is None else round(pra_over * 100, 0),
+                            "PRA_Edge%": None if pra_edge is None else round(float(pra_edge), 1),
+                            "BestEdge%": None if best_edge is None else round(float(best_edge), 1),
+                        }
+                    )
 
             if mode == "Top Points":
                 picks = sorted(rows, key=lambda x: x["PTS"], reverse=True)[:num_picks]
@@ -1011,3 +1150,18 @@ else:
                         st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+
+# -------------------------
+# FOOTER
+# -------------------------
+st.markdown(
+    """
+<div class="courtiq-card">
+  <div class="courtiq-muted">
+    CourtIQ provides data-driven projections for research and entertainment purposes.
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
