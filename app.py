@@ -70,15 +70,90 @@ DATA_PATH = newest_gamelog_csv()
 def load_gamelogs(csv_path: Path) -> pd.DataFrame:
     """
     Load and clean the gamelog file used by the app.
+    Handles common column-name variations automatically.
     """
     df = pd.read_csv(csv_path)
 
+    # Normalize all column names first
+    df.columns = [str(col).strip().upper() for col in df.columns]
+
+    # Map common aliases to the column names the app expects
+    rename_map = {}
+
+    # Player name aliases
+    if "PLAYER" in df.columns:
+        rename_map["PLAYER"] = "PLAYER_NAME"
+    if "NAME" in df.columns:
+        rename_map["NAME"] = "PLAYER_NAME"
+    if "PLAYERNAME" in df.columns:
+        rename_map["PLAYERNAME"] = "PLAYER_NAME"
+    if "PLAYER_FULL_NAME" in df.columns:
+        rename_map["PLAYER_FULL_NAME"] = "PLAYER_NAME"
+    if "FULL_NAME" in df.columns:
+        rename_map["FULL_NAME"] = "PLAYER_NAME"
+
+    # Team abbreviation aliases
+    if "TEAM" in df.columns:
+        rename_map["TEAM"] = "TEAM_ABBREVIATION"
+    if "TEAM_ABBR" in df.columns:
+        rename_map["TEAM_ABBR"] = "TEAM_ABBREVIATION"
+    if "TEAM_ABBREV" in df.columns:
+        rename_map["TEAM_ABBREV"] = "TEAM_ABBREVIATION"
+    if "TEAM_NAME" in df.columns:
+        rename_map["TEAM_NAME"] = "TEAM_ABBREVIATION"
+    if "TEAMCODE" in df.columns:
+        rename_map["TEAMCODE"] = "TEAM_ABBREVIATION"
+
+    # Opponent aliases
+    if "OPPONENT" in df.columns:
+        rename_map["OPPONENT"] = "OPP_TEAM_ABBREVIATION"
+    if "OPP_TEAM" in df.columns:
+        rename_map["OPP_TEAM"] = "OPP_TEAM_ABBREVIATION"
+    if "OPP" in df.columns:
+        rename_map["OPP"] = "OPP_TEAM_ABBREVIATION"
+
+    df = df.rename(columns=rename_map)
+
+    # Convert common text columns
     for col in ["PLAYER_NAME", "TEAM_ABBREVIATION", "MATCHUP", "OPP_TEAM_ABBREVIATION"]:
         if col in df.columns:
-            df[col] = df[col].astype(str)
+            df[col] = df[col].astype(str).str.strip()
+
+    # Normalize player/team values too
+    if "PLAYER_NAME" in df.columns:
+        df["PLAYER_NAME"] = df["PLAYER_NAME"].replace({"nan": None, "None": None})
+    if "TEAM_ABBREVIATION" in df.columns:
+        df["TEAM_ABBREVIATION"] = (
+            df["TEAM_ABBREVIATION"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .replace({"NAN": None, "NONE": None})
+        )
+    if "OPP_TEAM_ABBREVIATION" in df.columns:
+        df["OPP_TEAM_ABBREVIATION"] = (
+            df["OPP_TEAM_ABBREVIATION"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+            .replace({"NAN": None, "NONE": None})
+        )
 
     if "GAME_DATE" in df.columns:
         df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"], errors="coerce")
+
+    # Normalize stat aliases if needed
+    stat_rename_map = {}
+    if "POINTS" in df.columns:
+        stat_rename_map["POINTS"] = "PTS"
+    if "REBOUNDS" in df.columns:
+        stat_rename_map["REBOUNDS"] = "REB"
+    if "ASSISTS" in df.columns:
+        stat_rename_map["ASSISTS"] = "AST"
+    if "MINUTES" in df.columns:
+        stat_rename_map["MINUTES"] = "MIN"
+
+    df = df.rename(columns=stat_rename_map)
 
     for col in ["PTS", "REB", "AST", "MIN"]:
         if col in df.columns:
