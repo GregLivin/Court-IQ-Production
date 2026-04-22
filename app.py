@@ -1,8 +1,3 @@
-"""
-Court IQ Streamlit app for player predictions, matchup history, and
-over/under estimates.
-"""
-
 from __future__ import annotations
 
 import math
@@ -16,7 +11,6 @@ import streamlit as st
 
 from src.courtiq.models.predict import predict_from_last_n
 
-# Optional team lookup for NBA logo support
 try:
     from nba_api.stats.static import teams as static_teams
 except Exception:
@@ -32,73 +26,173 @@ st.markdown(
     """
 <style>
 .stApp {
-    background: #ffffff;
+    background: #f4f7fb;
     color: #111827;
 }
 
-h1, h2, h3, h4 {
-    color: #111827;
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+.courtiq-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.courtiq-title {
+    font-size: 3.2rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #0f172a;
+    margin-bottom: 0.2rem;
+}
+
+.courtiq-title span {
+    color: #2563eb;
+}
+
+.courtiq-subtitle {
+    font-size: 1.05rem;
+    color: #64748b;
+    margin-bottom: 0.9rem;
+}
+
+.courtiq-pill-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.courtiq-pill {
+    background: white;
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.06);
 }
 
 .courtiq-hero {
-    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-    border: 1px solid #dbe4ff;
-    border-radius: 18px;
-    padding: 22px;
+    background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+    border: 1px solid #dbeafe;
+    border-radius: 22px;
+    padding: 24px;
     margin-bottom: 18px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
 .courtiq-card {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 16px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.courtiq-section-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.35rem;
 }
 
 .courtiq-muted {
-    color: #4b5563;
+    color: #64748b;
     font-size: 0.96rem;
 }
 
-.courtiq-divider {
-    border-top: 1px solid #e5e7eb;
-    margin: 14px 0;
-}
-
-.stButton button {
-    border-radius: 10px !important;
-    font-weight: 650 !important;
-}
-
 .result-card {
-    background: linear-gradient(135deg, #111827, #1f2937);
-    padding: 20px;
-    border-radius: 16px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    padding: 24px;
+    border-radius: 20px;
     color: white;
-    margin-top: 15px;
-    margin-bottom: 18px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
 }
 
-.result-subtle {
-    color: #9ca3af;
+.result-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    margin-bottom: 0.25rem;
+}
+
+.result-value {
+    font-size: 2.8rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 0.45rem;
+}
+
+.result-sub {
+    color: #93c5fd;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.result-muted {
+    color: #94a3b8;
+    font-size: 0.95rem;
+}
+
+.courtiq-divider {
+    border-top: 1px solid #e2e8f0;
+    margin: 16px 0;
+}
+
+.stButton > button {
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    border: none !important;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: white !important;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+}
+
+@media (max-width: 768px) {
+    .courtiq-title {
+        font-size: 2.4rem;
+    }
+
+    .result-value {
+        font-size: 2.2rem;
+    }
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-st.title("Court IQ — Player Predictions")
+st.markdown(
+    """
+    <div class="courtiq-header">
+        <div class="courtiq-title">COURT <span>IQ</span></div>
+        <div class="courtiq-subtitle">Smarter NBA prop insights in seconds</div>
+        <div class="courtiq-pill-row">
+            <div class="courtiq-pill">PTS Projections</div>
+            <div class="courtiq-pill">PRA Insights</div>
+            <div class="courtiq-pill">Matchup Trends</div>
+            <div class="courtiq-pill">Confidence Score</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # -------------------------
 # DATA HELPERS
 # -------------------------
 def newest_gamelog_csv() -> Path:
-    """
-    Always prefer the 2025-26 regular season file when it exists.
-    Otherwise fall back to the newest matching gamelog CSV.
-    """
     preferred = Path("data/raw/player_gamelogs_2025_26_Regular_Season_nba_api.csv")
     if preferred.exists():
         return preferred
@@ -116,16 +210,8 @@ DATA_PATH = newest_gamelog_csv()
 
 @st.cache_data
 def load_gamelogs(csv_path: Path) -> pd.DataFrame:
-    """
-    Load and clean the gamelog file used by the app.
-    Handles common column-name variations automatically.
-    Builds TEAM_ABBREVIATION and OPP_TEAM_ABBREVIATION from MATCHUP if needed.
-    """
     df = pd.read_csv(csv_path)
-
     df.columns = [str(col).strip().upper() for col in df.columns]
-
-    # Remove duplicate columns early to prevent DataFrame/Series issues later
     df = df.loc[:, ~df.columns.duplicated()].copy()
 
     rename_map = {}
@@ -219,9 +305,6 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
 
 @st.cache_data
 def build_team_id_map() -> dict[str, int]:
-    """
-    Build a team abbreviation to team ID map for logos.
-    """
     if static_teams is None:
         return {}
     all_teams = static_teams.get_teams()
@@ -234,23 +317,17 @@ def build_team_id_map() -> dict[str, int]:
 
 @st.cache_data
 def build_player_id_map(df: pd.DataFrame) -> dict[str, int]:
-    """
-    Build a player name to player ID map from the gamelog dataframe.
-    """
     if df is None or df.empty:
         return {}
 
-    # Remove duplicate columns to prevent PLAYER_ID from becoming a DataFrame
     temp = df.loc[:, ~df.columns.duplicated()].copy()
 
     if "PLAYER_NAME" not in temp.columns or "PLAYER_ID" not in temp.columns:
         return {}
 
     temp = temp[["PLAYER_NAME", "PLAYER_ID"]].dropna().copy()
-
     temp["PLAYER_NAME"] = temp["PLAYER_NAME"].astype(str).str.strip()
 
-    # Defensive check in case PLAYER_ID still resolves oddly
     if isinstance(temp["PLAYER_ID"], pd.DataFrame):
         temp["PLAYER_ID"] = temp["PLAYER_ID"].iloc[:, 0]
 
@@ -267,9 +344,6 @@ def logo_url_from_team_id(team_id: int) -> str:
 
 
 def logo_url_from_abbr(team_abbr: str, team_id_map: dict[str, int]) -> str | None:
-    """
-    Return a team logo URL from the team abbreviation.
-    """
     if not team_abbr:
         return None
 
@@ -282,16 +356,10 @@ def logo_url_from_abbr(team_abbr: str, team_id_map: dict[str, int]) -> str | Non
 
 
 def player_headshot_url(player_id: int) -> str:
-    """
-    Return NBA player headshot URL.
-    """
     return f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
 
 
 def get_player_team_abbr(df: pd.DataFrame, player_name: str) -> str | None:
-    """
-    Get the player's most recent team abbreviation.
-    """
     if "PLAYER_NAME" not in df.columns or "TEAM_ABBREVIATION" not in df.columns:
         return None
 
@@ -306,9 +374,6 @@ def get_player_team_abbr(df: pd.DataFrame, player_name: str) -> str | None:
 
 
 def compute_confidence_from_last_n(df: pd.DataFrame, player_name: str, n: int) -> int | None:
-    """
-    Estimate consistency from the player's last N scoring results.
-    """
     if "PLAYER_NAME" not in df.columns or "PTS" not in df.columns:
         return None
 
@@ -331,9 +396,6 @@ def compute_confidence_from_last_n(df: pd.DataFrame, player_name: str, n: int) -
 
 
 def parse_opponent_from_matchup(matchup: str, team_abbr: str) -> str | None:
-    """
-    Parse the opponent from a matchup string such as 'LAL vs DEN' or 'LAL @ DEN'.
-    """
     if not matchup or not team_abbr:
         return None
 
@@ -351,9 +413,6 @@ def parse_opponent_from_matchup(matchup: str, team_abbr: str) -> str | None:
 
 
 def get_matchup_history(df: pd.DataFrame, player_name: str, opp_abbr: str, last_k: int = 10) -> pd.DataFrame:
-    """
-    Return recent matchup history for one player against one opponent.
-    """
     if "PLAYER_NAME" not in df.columns:
         return pd.DataFrame()
 
@@ -365,9 +424,7 @@ def get_matchup_history(df: pd.DataFrame, player_name: str, opp_abbr: str, last_
         sub["OPP"] = sub["OPP_TEAM_ABBREVIATION"].astype(str).str.upper()
     elif "MATCHUP" in sub.columns and "TEAM_ABBREVIATION" in sub.columns:
         sub["OPP"] = sub.apply(
-            lambda r: parse_opponent_from_matchup(
-                r.get("MATCHUP"), r.get("TEAM_ABBREVIATION")
-            ),
+            lambda r: parse_opponent_from_matchup(r.get("MATCHUP"), r.get("TEAM_ABBREVIATION")),
             axis=1,
         )
     else:
@@ -614,32 +671,6 @@ def last_games_table(df: pd.DataFrame, player_name: str, k: int = 5) -> pd.DataF
     return out[final_cols].sort_values("GAME_DATE", ascending=False)
 
 
-def last_games_chart_df(df: pd.DataFrame, player_name: str, k: int = 10) -> pd.DataFrame:
-    if "PLAYER_NAME" not in df.columns:
-        return pd.DataFrame()
-
-    sub = df[df["PLAYER_NAME"].str.lower() == player_name.lower()].copy()
-    if sub.empty:
-        return pd.DataFrame()
-
-    if "GAME_DATE" in sub.columns:
-        sub = sub.sort_values("GAME_DATE")
-    sub = sub.tail(k).copy()
-
-    out = pd.DataFrame()
-    out["GAME_DATE"] = pd.to_datetime(sub.get("GAME_DATE"), errors="coerce").dt.date
-
-    for c in ["PTS", "REB", "AST"]:
-        if c in sub.columns:
-            out[c] = pd.to_numeric(sub[c], errors="coerce")
-
-    if all(c in out.columns for c in ["PTS", "REB", "AST"]):
-        out["PRA"] = out["PTS"] + out["REB"] + out["AST"]
-
-    out = out.dropna(subset=["GAME_DATE"])
-    return out
-
-
 def verdict_from_prob(prob_over: float) -> tuple[str, str]:
     if prob_over >= 0.60:
         return "Strong OVER", "success"
@@ -669,9 +700,7 @@ else:
 st.markdown(
     f"""
 <div class="courtiq-hero">
-  <div style="font-size:1.4rem; font-weight:800; margin-bottom:8px;">
-    Smarter NBA prop insights in seconds
-  </div>
+  <div class="courtiq-section-title">Smarter NBA prop insights in seconds</div>
   <div class="courtiq-muted" style="margin-bottom:10px;">
     Use recent game trends, matchup context, and probability estimates to make faster player prop decisions.
   </div>
@@ -686,7 +715,7 @@ st.markdown(
 st.markdown(
     """
 <div class="courtiq-card">
-  <div style="font-size:1.1rem; font-weight:800; margin-bottom:8px;">How to use Court IQ</div>
+  <div class="courtiq-section-title">How to use Court IQ</div>
   <div class="courtiq-muted">
     1. Choose a player and recent game sample<br/>
     2. Optionally select an opponent for matchup context<br/>
@@ -705,7 +734,7 @@ st.info("Tip: Look for confidence above 70% for more stable players.")
 # SINGLE PLAYER PREDICTION
 # -------------------------
 st.markdown('<div class="courtiq-card">', unsafe_allow_html=True)
-st.markdown("## Step 1: Single Player Prediction")
+st.markdown('<div class="courtiq-section-title">Single Player Prediction</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="courtiq-muted">Analyze one player using recent performance, matchup history, and projected over/under probability.</div>',
     unsafe_allow_html=True,
@@ -838,47 +867,26 @@ if do_predict:
 
         with card_col1:
             if headshot:
-                st.image(headshot, width=140)
+                st.image(headshot, width=150)
 
         with card_col2:
             st.markdown(
                 f"""
                 <div class="result-card">
-                    <div style="font-size: 1.2rem; font-weight: 700;">
-                        {player} Projection
-                    </div>
-                    <div style="font-size: 2.2rem; font-weight: 800; margin-top: 8px;">
-                        {adj_pts:.1f} PTS
-                    </div>
-                    <div style="margin-top: 6px;">
-                        PRA: {adj_pra:.1f}
-                    </div>
-                    <div style="margin-top: 10px;" class="result-subtle">
-                        Confidence: {conf if conf is not None else "—"}%
-                    </div>
+                    <div class="result-title">{player} Projection</div>
+                    <div class="result-value">{adj_pts:.1f} PTS</div>
+                    <div class="result-sub">PRA: {adj_pra:.1f}</div>
+                    <div class="result-muted">Confidence: {conf if conf is not None else "—"}%</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        st.markdown("### Step 2: Best Insight")
-
-        summary1, summary2, summary3, summary4 = st.columns(4)
-        summary1.metric("Projected PTS", f"{adj_pts:.2f}")
-        summary2.metric("Projected PRA", f"{adj_pra:.2f}")
-        summary3.metric("PTS Over Chance", f"{pts_ou['prob_over']*100:.0f}%" if pts_ou.get("ok") else "—")
-        summary4.metric("Confidence", f"{conf}%" if conf is not None else "—")
-
-        if pts_ou.get("ok"):
-            prob = float(pts_ou["prob_over"])
-            verdict_text, verdict_type = verdict_from_prob(prob)
-
-            if verdict_type == "success":
-                st.success(f"{verdict_text} ({prob*100:.0f}% over)")
-            elif verdict_type == "error":
-                st.error(f"{verdict_text} ({(1 - prob)*100:.0f}% under)")
-            else:
-                st.warning(verdict_text)
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Projected PTS", f"{adj_pts:.2f}")
+        m2.metric("Projected PRA", f"{adj_pra:.2f}")
+        m3.metric("PTS Over Chance", f"{pts_ou['prob_over']*100:.0f}%" if pts_ou.get("ok") else "—")
+        m4.metric("Confidence", f"{conf}%" if conf is not None else "—")
 
         st.markdown("### Why this projection")
         st.write(
@@ -891,42 +899,35 @@ if do_predict:
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
 
-        head_left, head_mid, head_right = st.columns([1, 4, 1])
-        with head_left:
+        left_col, center_col, right_col = st.columns([1, 4, 1])
+        with left_col:
             if p_logo:
                 st.image(p_logo, width=72)
             elif p_team:
                 st.write(p_team)
 
-        with head_mid:
-            st.markdown("### Step 3: Projection Details")
+        with center_col:
+            st.markdown("### Projection Details")
             st.caption("Base projection with optional matchup adjustment.")
 
-        with head_right:
+        with right_col:
             if opp_logo:
                 st.image(opp_logo, width=72)
             elif opp_abbr and opp_abbr != "—":
                 st.write(opp_abbr)
 
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("PTS (Base)", f"{base_pts:.2f}")
-        m2.metric("PTS (Adjusted)", f"{float(adj_pts):.2f}")
-        m3.metric("REB", f"{base_reb:.2f}")
-        m4.metric("AST", f"{base_ast:.2f}")
-        m5.metric("PRA (Adj)", f"{adj_pra:.2f}")
+        d1, d2, d3, d4, d5 = st.columns(5)
+        d1.metric("PTS Base", f"{base_pts:.2f}")
+        d2.metric("PTS Adj", f"{adj_pts:.2f}")
+        d3.metric("REB", f"{base_reb:.2f}")
+        d4.metric("AST", f"{base_ast:.2f}")
+        d5.metric("PRA Adj", f"{adj_pra:.2f}")
 
         st.markdown("#### Matchup adjustment note")
         st.write(adj_note)
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-        if conf is not None:
-            st.metric("Confidence (Consistency)", f"{conf}%")
-            st.caption("Higher confidence means the player's recent results have been more consistent.")
-        else:
-            st.metric("Confidence (Consistency)", "—")
-
-        st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### Step 4: Over / Under Probabilities")
+        st.markdown("### Over / Under Probabilities")
 
         ou1, ou2 = st.columns(2)
 
@@ -938,7 +939,7 @@ if do_predict:
                 st.metric("Prob OVER", f"{pts_ou['prob_over']*100:.0f}%")
                 st.metric("Prob UNDER", f"{pts_ou['prob_under']*100:.0f}%")
                 st.caption(f"mu={pts_ou['mu']:.2f} | sigma={pts_ou['sigma']:.2f}")
-                st.caption(f"{pts_ou['sigma_note']}")
+                st.caption(pts_ou["sigma_note"])
             else:
                 st.info(pts_ou.get("error", "Could not compute PTS probabilities."))
 
@@ -950,26 +951,19 @@ if do_predict:
                 st.metric("Prob OVER", f"{pra_ou['prob_over']*100:.0f}%")
                 st.metric("Prob UNDER", f"{pra_ou['prob_under']*100:.0f}%")
                 st.caption(f"mu={pra_ou['mu']:.2f} | sigma={pra_ou['sigma']:.2f}")
-                st.caption(f"{pra_ou['sigma_note']}")
+                st.caption(pra_ou["sigma_note"])
             else:
                 st.info(pra_ou.get("error", "Could not compute PRA probabilities."))
 
         if opp_abbr and opp_abbr != "—":
             st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-            st.markdown("### Step 5: Matchup History")
+            st.markdown("### Matchup History")
 
             hist = get_matchup_history(df_logs, player, opp_abbr, last_k=10)
             if hist.empty:
                 st.info("No matchup history found for this player and opponent.")
             else:
                 st.dataframe(hist, width="stretch", hide_index=True)
-
-                if "PTS" in hist.columns:
-                    pts_series = pd.to_numeric(hist["PTS"], errors="coerce").dropna()
-                    if not pts_series.empty:
-                        st.caption(
-                            f"H2H vs {opp_abbr}: Games={len(pts_series)}, Avg PTS={pts_series.mean():.1f}, Last PTS={pts_series.iloc[-1]:.0f}"
-                        )
 
         st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
         st.markdown("### Last 5 Games")
@@ -979,23 +973,6 @@ if do_predict:
             st.info("No recent game logs found for that player in this dataset.")
         else:
             st.dataframe(last5, width="stretch", hide_index=True)
-
-        st.markdown('<div class="courtiq-divider"></div>', unsafe_allow_html=True)
-        st.markdown("### Trend Charts")
-
-        chart_df = last_games_chart_df(df_logs, player, k=10)
-        if chart_df.empty:
-            st.info("Not enough data to chart.")
-        else:
-            chart_df = chart_df.set_index("GAME_DATE")
-            if "PTS" in chart_df.columns:
-                st.line_chart(chart_df["PTS"], height=180)
-            if "REB" in chart_df.columns:
-                st.line_chart(chart_df["REB"], height=180)
-            if "AST" in chart_df.columns:
-                st.line_chart(chart_df["AST"], height=180)
-            if "PRA" in chart_df.columns:
-                st.line_chart(chart_df["PRA"], height=180)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
