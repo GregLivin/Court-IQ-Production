@@ -125,6 +125,9 @@ def load_gamelogs(csv_path: Path) -> pd.DataFrame:
 
     df.columns = [str(col).strip().upper() for col in df.columns]
 
+    # Remove duplicate columns early to prevent DataFrame/Series issues later
+    df = df.loc[:, ~df.columns.duplicated()].copy()
+
     rename_map = {}
 
     if "PLAYER" in df.columns:
@@ -234,16 +237,29 @@ def build_player_id_map(df: pd.DataFrame) -> dict[str, int]:
     """
     Build a player name to player ID map from the gamelog dataframe.
     """
-    if "PLAYER_NAME" not in df.columns or "PLAYER_ID" not in df.columns:
+    if df is None or df.empty:
         return {}
 
-    temp = df[["PLAYER_NAME", "PLAYER_ID"]].dropna().copy()
+    # Remove duplicate columns to prevent PLAYER_ID from becoming a DataFrame
+    temp = df.loc[:, ~df.columns.duplicated()].copy()
+
+    if "PLAYER_NAME" not in temp.columns or "PLAYER_ID" not in temp.columns:
+        return {}
+
+    temp = temp[["PLAYER_NAME", "PLAYER_ID"]].dropna().copy()
+
     temp["PLAYER_NAME"] = temp["PLAYER_NAME"].astype(str).str.strip()
+
+    # Defensive check in case PLAYER_ID still resolves oddly
+    if isinstance(temp["PLAYER_ID"], pd.DataFrame):
+        temp["PLAYER_ID"] = temp["PLAYER_ID"].iloc[:, 0]
+
     temp["PLAYER_ID"] = pd.to_numeric(temp["PLAYER_ID"], errors="coerce")
-    temp = temp.dropna(subset=["PLAYER_ID"])
+    temp = temp.dropna(subset=["PLAYER_ID"]).copy()
+    temp["PLAYER_ID"] = temp["PLAYER_ID"].astype(int)
     temp = temp.drop_duplicates(subset=["PLAYER_NAME"], keep="last")
 
-    return {row["PLAYER_NAME"]: int(row["PLAYER_ID"]) for _, row in temp.iterrows()}
+    return dict(zip(temp["PLAYER_NAME"], temp["PLAYER_ID"]))
 
 
 def logo_url_from_team_id(team_id: int) -> str:
