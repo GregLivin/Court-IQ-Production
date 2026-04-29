@@ -1043,7 +1043,7 @@ st.markdown(
     """
 <div class="courtiq-card">
   <div style="color:#dc2626; font-weight:800; font-size:1rem; line-height:1.4;">
-    ⚠️ Disclaimer: Court IQ is an AI-powered analytics tool designed to provide
+    Disclaimer: Court IQ is an AI-powered analytics tool designed to provide
     data-driven projections based on historical NBA performance trends.
     <br><br>
     All outputs are probabilistic estimates — not guarantees — and are intended
