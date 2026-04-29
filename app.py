@@ -709,15 +709,6 @@ else:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-st.markdown(
-    """
-<div style="background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;
-font-weight:800;padding:12px 16px;border-radius:14px;margin-bottom:18px;">
-Live AI-powered NBA player prediction system
-</div>
-""",
-    unsafe_allow_html=True,
-)
 
 st.markdown(
 """
