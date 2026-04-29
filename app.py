@@ -714,19 +714,15 @@ st.markdown(
 """
 <div class="courtiq-card">
   <div class="courtiq-section-title">How does Court IQ work?</div>
-  <div class="courtiq-muted">
 
-Court IQ uses machine learning models trained on real NBA player data to generate intelligent projections and performance insights.
-
-<br><br>
-
-<b>How it works:</b><br>
-1. Select a player<br>
-2. Choose recent games<br>
-3. Enter PTS & PRA lines<br>
-4. Click "Generate Prediction" to view results
-
+  <div class="courtiq-muted" style="margin-top:6px; line-height:1.6;">
+    <b>How it works:</b><br>
+    1. Select a player<br>
+    2. Choose recent games<br>
+    3. Enter PTS & PRA lines<br>
+    4. Generate prediction
   </div>
+
 </div>
 """,
 unsafe_allow_html=True
