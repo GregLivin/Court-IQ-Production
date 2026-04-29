@@ -716,7 +716,6 @@ st.markdown(
   <div class="courtiq-section-title">How does Court IQ work?</div>
 
   <div class="courtiq-muted" style="margin-top:6px; line-height:1.6;">
-    <b>How it works:</b><br>
     1. Select a player<br>
     2. Set the "Last N Games" slider from 1–10<br>
     3. Enter PTS & PRA lines<br>
