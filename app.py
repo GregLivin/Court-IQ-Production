@@ -735,25 +735,25 @@ Live AI-powered NBA player prediction system
 )
 
 st.markdown(
-    """
+"""
 <div class="courtiq-card">
   <div class="courtiq-section-title">How does Court IQ work?</div>
   <div class="courtiq-muted">
 
-    Court IQ uses machine learning models trained on real NBA player data to generate intelligent projections and performance insights.
+Court IQ uses machine learning models trained on real NBA player data to generate intelligent projections and performance insights.
 
-    <br><br>
+<br><br>
 
-    <b>To fetch player predictions:</b><br>
-    1. Select a player<br>
-    2. Choose the number of recent games<br>
-    3. Enter PTS and PRA lines<br>
-    4. Click “Generate Prediction” to view results
+<b>To fetch player predictions:</b><br>
+1. Select a player<br>
+2. Choose the number of recent games<br>
+3. Enter PTS and PRA lines<br>
+4. Click "Generate Prediction" to view results
 
   </div>
 </div>
 """,
-    unsafe_allow_html=True,
+unsafe_allow_html=True
 )
 
 st.info("Tip: Look for confidence above 70% for more stable players.")
