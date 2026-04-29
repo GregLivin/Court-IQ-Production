@@ -1158,37 +1158,61 @@ else:
 # -------------------------
 
 st.markdown(
-    f"""
+    """
 <div class="courtiq-hero">
   <div class="courtiq-section-title">Smarter NBA prop insights in seconds</div>
   <div class="courtiq-muted" style="margin-bottom:10px;">
-    Use recent game trends, matchup context, and probability estimates to make faster player prop decisions.
+    Transform raw player data into actionable insights using AI-powered projections,
+    matchup intelligence, and probability modeling.
   </div>
   <div class="courtiq-muted">
-    Current dataset: <b>{DATA_PATH.name}</b>
+    Updated with the latest NBA player performance data
   </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
-# We display a hero banner explaining the main value of Court IQ.
+# We display a polished hero banner that explains the value of Court IQ without showing backend file names.
+
+st.success("Live AI-powered NBA player prediction system")
+# We add a strong product-style status message for the final demo.
 
 st.markdown(
     """
 <div class="courtiq-card">
   <div class="courtiq-section-title">How does Court IQ work?</div>
   <div class="courtiq-muted">
-    Court IQ uses machine learning models trained on real NBA player game logs.
-    It analyzes recent player performance, matchup context, and player consistency
-    to generate projected stats, over/under probabilities, and confidence scores.
+    Court IQ uses machine learning models trained on real NBA player data
+    to generate intelligent projections and performance insights.
+
     <br/><br/>
-    <b>Demo Flow:</b> Select a player → choose recent game sample → enter prop lines → generate prediction.
+
+    <b>What the model analyzes:</b>
+    <ul style="margin-top:5px;">
+        <li>Recent player performance trends (last N games)</li>
+        <li>Matchup-specific historical data vs opponents</li>
+        <li>Player consistency and statistical variance</li>
+    </ul>
+
+    <br/>
+
+    <b>What you get:</b>
+    <ul style="margin-top:5px;">
+        <li>Projected player stats (PTS, REB, AST, PRA)</li>
+        <li>Over/Under probability estimates</li>
+        <li>Confidence score based on consistency</li>
+    </ul>
+
+    <br/>
+
+    <b>Demo Flow:</b><br/>
+    Select a player → choose recent games → enter prop lines → generate prediction
   </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
-# We explain the app workflow in presentation-friendly language.
+# We explain the app workflow with stronger product language and clear demo bullet points.
 
 st.info("Tip: Look for confidence above 70% for more stable players.")
 # We display a quick user tip about confidence.
@@ -1685,17 +1709,21 @@ st.markdown(
     """
 <div class="courtiq-card">
   <div style="color:#dc2626; font-weight:800; font-size:1rem; line-height:1.4;">
-    ⚠️ Disclaimer: Court IQ is an AI-powered analytics tool designed to provide 
-    data-driven projections based on historical NBA performance trends. 
-    
-    All outputs are probabilistic estimates — not guarantees — and are intended 
-    strictly for educational, research, and demonstration purposes. 
-    
-    Users should not rely on these predictions for financial decisions, wagering, 
+    ⚠️ Disclaimer: Court IQ is an AI-powered analytics tool designed to provide
+    data-driven projections based on historical NBA performance trends.
+
+    <br/><br/>
+
+    All outputs are probabilistic estimates — not guarantees — and are intended
+    strictly for educational, research, and demonstration purposes.
+
+    <br/><br/>
+
+    Users should not rely on these predictions for financial decisions, wagering,
     or real-world risk-based activities.
   </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
-# We display the app footer and disclaimer.
+# We display the red disclaimer footer so users understand the app is for education, research, and demonstration only.
