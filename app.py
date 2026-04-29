@@ -1007,19 +1007,6 @@ if do_predict:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(
-    """
-<div class="courtiq-card">
-  <div style="color:#dc2626; font-weight:800; font-size:1rem; line-height:1.4;">
-    Disclaimer: Court IQ is an AI-powered analytics tool designed to provide
-    data-driven projections based on historical NBA performance trends.
-    <br><br>
-    All outputs are probabilistic estimates — not guarantees — and are intended
-    strictly for educational, research, and demonstration purposes.
-    <br><br>
-    Users should not rely on these predictions for financial decisions, wagering,
-    or real-world risk-based activities.
-  </div>
-</div>
-""",
-    unsafe_allow_html=True,
+'<div style="text-align:center; color:#94a3b8; font-size:0.8rem; margin-top:20px;">AI-generated projections for informational purposes only.</div>',
+unsafe_allow_html=True
 )
