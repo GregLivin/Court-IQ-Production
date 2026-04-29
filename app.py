@@ -709,32 +709,6 @@ else:
 
 
 st.markdown(
-    """
-<div class="courtiq-hero">
-  <div class="courtiq-section-title">Smarter NBA prop insights in seconds</div>
-  <div class="courtiq-muted" style="margin-bottom:10px;">
-    Transform raw player data into actionable insights using AI-powered projections,
-    matchup intelligence, and probability modeling.
-  </div>
-  <div class="courtiq-muted">
-    Updated with the latest NBA player performance data
-  </div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-<div style="background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;
-font-weight:800;padding:12px 16px;border-radius:14px;margin-bottom:18px;">
-Live AI-powered NBA player prediction system
-</div>
-""",
-    unsafe_allow_html=True,
-)
-
-st.markdown(
 """
 <div class="courtiq-card">
   <div class="courtiq-section-title">How does Court IQ work?</div>
