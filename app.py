@@ -744,7 +744,7 @@ st.markdown(
 
     <br><br>
 
-    <b>How it works:</b><br>
+    <b>To fetch player predictions:</b><br>
     1. Select a player<br>
     2. Choose the number of recent games<br>
     3. Enter PTS and PRA lines<br>
