@@ -186,7 +186,25 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("Powered by Machine Learning • NBA Game Logs • Player Prop Probability Analysis")
+st.markdown(
+"""
+<div style="
+    text-align:center;
+    background:#f1f5f9;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:8px 12px;
+    font-size:0.85rem;
+    font-weight:600;
+    color:#334155;
+    margin-top:6px;
+    margin-bottom:18px;
+">
+AI-Powered NBA Analytics • Real Player Data • Predictive Insights
+</div>
+""",
+unsafe_allow_html=True
+) Analysis")
 
 
 def newest_gamelog_csv() -> Path:
