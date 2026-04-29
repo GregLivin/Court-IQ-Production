@@ -1684,8 +1684,15 @@ st.markdown("</div>", unsafe_allow_html=True)
 st.markdown(
     """
 <div class="courtiq-card">
-  <div class="courtiq-muted">
-    Court IQ provides data-driven projections for research and entertainment purposes.
+  <div style="color:#dc2626; font-weight:800; font-size:1rem; line-height:1.4;">
+    ⚠️ Disclaimer: Court IQ is an AI-powered analytics tool designed to provide 
+    data-driven projections based on historical NBA performance trends. 
+    
+    All outputs are probabilistic estimates — not guarantees — and are intended 
+    strictly for educational, research, and demonstration purposes. 
+    
+    Users should not rely on these predictions for financial decisions, wagering, 
+    or real-world risk-based activities.
   </div>
 </div>
 """,
