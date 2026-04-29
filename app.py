@@ -186,7 +186,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("Powered by Machine Learning • NBA Game Logs • Player Prop Probability Analysis")
+st.caption("AI-Powered NBA Analytics • Real Game Data • Predictive Insights")
 
 
 def newest_gamelog_csv() -> Path:
