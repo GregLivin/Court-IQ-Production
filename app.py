@@ -707,22 +707,7 @@ else:
     st.error(f"Could not find gamelog file: {DATA_PATH}")
     st.stop()
 
-
-st.markdown(
-    """
-<div class="courtiq-hero">
-  <div class="courtiq-section-title">Smarter NBA prop insights in seconds</div>
-  <div class="courtiq-muted" style="margin-bottom:10px;">
-    Transform raw player data into actionable insights using AI-powered projections,
-    matchup intelligence, and probability modeling.
-  </div>
-  <div class="courtiq-muted">
-    Updated with the latest NBA player performance data
-  </div>
-</div>
-""",
-    unsafe_allow_html=True,
-)
+st.markdown("<br>", unsafe_allow_html=True)
 
 st.markdown(
     """
