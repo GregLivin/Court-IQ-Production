@@ -720,10 +720,10 @@ Court IQ uses machine learning models trained on real NBA player data to generat
 
 <br><br>
 
-<b>To fetch player predictions:</b><br>
+<b>How it works:</b><br>
 1. Select a player<br>
-2. Choose the number of recent games<br>
-3. Enter PTS and PRA lines<br>
+2. Choose recent games<br>
+3. Enter PTS & PRA lines<br>
 4. Click "Generate Prediction" to view results
 
   </div>
