@@ -739,11 +739,17 @@ st.markdown(
 <div class="courtiq-card">
   <div class="courtiq-section-title">How does Court IQ work?</div>
   <div class="courtiq-muted">
-    Court IQ uses real NBA game logs and trained machine learning models to project player performance.
+
+    Court IQ uses machine learning models trained on real NBA player data to generate intelligent projections and performance insights.
+
     <br><br>
-    It reviews recent trends, matchup history, and player consistency to generate projected stats, over/under probabilities, and confidence scores.
-    <br><br>
-    <b>Demo Flow:</b> Select player → choose recent games → enter lines → generate prediction
+
+    <b>How it works:</b><br>
+    1. Select a player<br>
+    2. Choose the number of recent games<br>
+    3. Enter PTS and PRA lines<br>
+    4. Click “Generate Prediction” to view results
+
   </div>
 </div>
 """,
